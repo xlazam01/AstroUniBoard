@@ -17,10 +17,13 @@ __pycache__/
 .venv/
 venv/
 
-# KiCad
+# KiCad auto-save / lock / backups
 HW/**/*.bak
 HW/**/*-backups/
 HW/**/fp-info-cache
+HW/**/#auto_saved_files#
+HW/**/~*.lck
+HW/**/~*.sch.lck
 
 # Claude Code local settings
 .claude/settings.local.json
