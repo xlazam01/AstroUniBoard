@@ -20,6 +20,7 @@ venv/
 # KiCad auto-save / lock / backups
 HW/**/*.bak
 HW/**/*-backups/
+HW/**/production/backups/
 HW/**/fp-info-cache
 HW/**/#auto_saved_files#
 HW/**/~*.lck
