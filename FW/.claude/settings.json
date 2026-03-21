@@ -1,0 +1,16 @@
+{
+  "defaultMode": "acceptEdits",
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "WebFetch(domain:www.farnell.com)",
+      "WebFetch(domain:sensirion.com)",
+      "WebFetch(domain:www.digikey.com)",
+      "WebFetch(domain:doc.riot-os.org)",
+      "WebFetch(domain:api.riot-os.org)",
+      "WebFetch(domain:docs.platformio.org)",
+      "WebFetch(domain:www.st.com)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

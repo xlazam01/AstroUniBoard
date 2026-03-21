@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "firmware-manager": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "tools/firmware_manager/server.py"
+      ]
+    }
+  }
+}

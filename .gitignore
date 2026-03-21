@@ -1,0 +1,32 @@
+# PlatformIO
+FW/.pio/
+
+# VS Code (keep settings.json, ignore generated files)
+FW/.vscode/.browse.c_cpp.db*
+FW/.vscode/c_cpp_properties.json
+FW/.vscode/launch.json
+FW/.vscode/ipch/
+
+# Build artifacts
+FW/buildlog.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# KiCad
+HW/**/*.bak
+HW/**/*-backups/
+HW/**/fp-info-cache
+
+# Claude Code local settings
+.claude/settings.local.json
+FW/.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
