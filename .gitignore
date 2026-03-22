@@ -25,6 +25,7 @@ HW/**/fp-info-cache
 HW/**/#auto_saved_files#
 HW/**/~*.lck
 HW/**/~*.sch.lck
+HW/.history/
 
 # Claude Code local settings
 .claude/settings.local.json
