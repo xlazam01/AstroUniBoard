@@ -39,9 +39,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 1.0,
+          "drill": 0.0,
           "height": 1.4,
-          "width": 1.4
+          "width": 1.025
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -50,7 +50,7 @@
         "silk_text_thickness": 0.15,
         "silk_text_upright": false,
         "zones": {
-          "min_clearance": 0.127
+          "min_clearance": 0.0
         }
       },
       "diff_pair_dimensions": [
@@ -60,32 +60,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        [
-          "unconnected_items|65880000|126475000|F.Cu|4|94d6f85e-28e2-4676-a5cc-482d7be7c007|ba3ceaaf-508e-4634-b8e7-2443d8bf7849",
-          ""
-        ],
-        [
-          "unconnected_items|65880001|130674998|F.Cu|4|9a792bf9-2e92-4b8a-a2bf-0039b7c736df|94d6f85e-28e2-4676-a5cc-482d7be7c007",
-          ""
-        ],
-        [
-          "unconnected_items|74520001|130675000|F.Cu|4|118038bf-9bb1-4759-9bc9-d20eab18ef6f|ba3ceaaf-508e-4634-b8e7-2443d8bf7849",
-          ""
-        ],
-        [
-          "unconnected_items|90580000|126475000|F.Cu|4|7877c828-49f5-463e-ba23-0c4e82b398df|8abc487a-3acd-4961-96a6-2d09fc395a11",
-          ""
-        ],
-        [
-          "unconnected_items|90580000|126475000|F.Cu|4|7877c828-49f5-463e-ba23-0c4e82b398df|aca48a04-1045-4dc0-8b24-85552623b866",
-          ""
-        ],
-        [
-          "unconnected_items|99220000|126475000|F.Cu|4|8abc487a-3acd-4961-96a6-2d09fc395a11|b3e32243-a2e5-4e9f-a961-77fcf38c1dd2",
-          ""
-        ]
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -117,7 +92,7 @@
         "items_not_allowed": "error",
         "length_out_of_range": "error",
         "lib_footprint_issues": "warning",
-        "lib_footprint_mismatch": "ignore",
+        "lib_footprint_mismatch": "warning",
         "malformed_courtyard": "error",
         "microvia_drill_out_of_range": "error",
         "mirrored_text_on_front_layer": "warning",
@@ -131,12 +106,12 @@
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
         "silk_edge_clearance": "ignore",
-        "silk_over_copper": "ignore",
+        "silk_over_copper": "warning",
         "silk_overlap": "ignore",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
         "starved_thermal": "error",
-        "text_height": "ignore",
+        "text_height": "warning",
         "text_on_edge_cuts": "error",
         "text_thickness": "warning",
         "through_hole_pad_without_hole": "error",
@@ -157,11 +132,11 @@
       "rules": {
         "max_error": 0.005,
         "min_clearance": 0.127,
-        "min_connection": 0.127,
-        "min_copper_edge_clearance": 0.1,
+        "min_connection": 0.0,
+        "min_copper_edge_clearance": 0.0,
         "min_groove_width": 0.0,
         "min_hole_clearance": 0.2,
-        "min_hole_to_hole": 0.2,
+        "min_hole_to_hole": 0.25,
         "min_microvia_diameter": 0.2,
         "min_microvia_drill": 0.1,
         "min_resolved_spokes": 2,
@@ -275,13 +250,7 @@
       "mpn": "",
       "sch_revision": ""
     },
-    "layer_pairs": [
-      {
-        "bottomLayer": 2,
-        "enabled": true,
-        "topLayer": 0
-      }
-    ],
+    "layer_pairs": [],
     "layer_presets": [],
     "viewports": []
   },
@@ -529,7 +498,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "astrouniboard.kicad_pro",
+    "filename": "astrouniboard.kicad_pcb_bck.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -713,7 +682,7 @@
         "uuid": "2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
       }
     ],
-    "used_designators": "",
+    "used_designators": "C57-58",
     "variants": []
   },
   "sheets": [

@@ -8197,12 +8197,6 @@
 		(uuid "1139a65b-f6f1-4ea1-8c13-c2e8c9afe316")
 	)
 	(junction
-		(at -6.35 11.43)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "11ed2a5d-247f-4ea7-8b86-587372ad968b")
-	)
-	(junction
 		(at 214.63 46.99)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8527,12 +8521,6 @@
 		(uuid "4efdbd35-249f-452d-b8bb-3ce327a404d6")
 	)
 	(junction
-		(at -6.35 -3.81)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "5362e914-394c-4f48-b7f0-d9a9426051ae")
-	)
-	(junction
 		(at -71.755 238.76)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8549,12 +8537,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "5530df19-d0ed-49dd-b20d-86d7bf175fa6")
-	)
-	(junction
-		(at -87.63 55.88)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "55cba0e3-35cb-4ac6-b3c2-8f4f3c8b2a80")
 	)
 	(junction
 		(at -101.6 330.2)
@@ -8933,6 +8915,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a73b239d-df6d-4752-893a-1f5531c23194")
+	)
+	(junction
+		(at -87.63 55.88)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "a9932045-907e-4f8d-9d6d-cf9f69d93d98")
 	)
 	(junction
 		(at 58.42 44.45)
@@ -9422,16 +9410,6 @@
 	)
 	(wire
 		(pts
-			(xy 1.27 -3.81) (xy -6.35 -3.81)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "03ec9ac2-3750-4390-98fb-6c0a029215e5")
-	)
-	(wire
-		(pts
 			(xy 58.42 88.9) (xy 58.42 97.79)
 		)
 		(stroke
@@ -9452,7 +9430,7 @@
 	)
 	(wire
 		(pts
-			(xy -6.35 11.43) (xy -15.24 11.43)
+			(xy -15.24 11.43) (xy 1.27 11.43)
 		)
 		(stroke
 			(width 0)
@@ -9489,6 +9467,16 @@
 			(type default)
 		)
 		(uuid "061cfacb-a1db-40e4-8923-b6ceb96989f2")
+	)
+	(wire
+		(pts
+			(xy 55.88 251.46) (xy 63.5 251.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "066757ad-137c-4e3d-bd06-e15b98d6fab7")
 	)
 	(wire
 		(pts
@@ -9829,16 +9817,6 @@
 			(type default)
 		)
 		(uuid "123cca26-d06f-4394-9d0a-63a38450274b")
-	)
-	(wire
-		(pts
-			(xy 1.27 11.43) (xy -6.35 11.43)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "123fc9dd-3b53-4100-bbc7-95dec8b8848d")
 	)
 	(wire
 		(pts
@@ -10682,7 +10660,7 @@
 	)
 	(wire
 		(pts
-			(xy -87.63 20.32) (xy -87.63 55.88)
+			(xy -87.63 35.56) (xy -87.63 55.88)
 		)
 		(stroke
 			(width 0)
@@ -10832,16 +10810,6 @@
 	)
 	(wire
 		(pts
-			(xy -6.35 -3.81) (xy -6.35 0)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3555e58e-c4e0-49e9-8900-1f3f3b5f7fcf")
-	)
-	(wire
-		(pts
 			(xy -131.445 217.17) (xy -131.445 218.44)
 		)
 		(stroke
@@ -10959,16 +10927,6 @@
 			(type default)
 		)
 		(uuid "398f589f-248f-437f-8c62-0484342003a7")
-	)
-	(wire
-		(pts
-			(xy 22.86 242.57) (xy 22.86 243.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "39be64d4-c1ef-4cb7-a229-c2803a5ee44c")
 	)
 	(wire
 		(pts
@@ -11422,7 +11380,7 @@
 	)
 	(wire
 		(pts
-			(xy -71.12 12.7) (xy -71.12 34.29)
+			(xy -71.12 27.94) (xy -71.12 34.29)
 		)
 		(stroke
 			(width 0)
@@ -11499,6 +11457,16 @@
 			(type default)
 		)
 		(uuid "4dd417ca-6cbf-4c0a-8467-4cae1c331458")
+	)
+	(wire
+		(pts
+			(xy 55.88 259.08) (xy 63.5 259.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4e0cd6af-99c9-4d04-8a12-69dbb588dc04")
 	)
 	(wire
 		(pts
@@ -11882,16 +11850,6 @@
 	)
 	(wire
 		(pts
-			(xy 21.59 243.205) (xy 21.59 243.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "61180e1d-7736-4c55-b936-a7b3d8d17869")
-	)
-	(wire
-		(pts
 			(xy 383.54 128.27) (xy 379.73 128.27)
 		)
 		(stroke
@@ -12272,7 +12230,7 @@
 	)
 	(wire
 		(pts
-			(xy -95.25 12.7) (xy -104.14 12.7)
+			(xy -95.25 27.94) (xy -104.14 27.94)
 		)
 		(stroke
 			(width 0)
@@ -14282,7 +14240,7 @@
 	)
 	(wire
 		(pts
-			(xy -80.01 12.7) (xy -71.12 12.7)
+			(xy -80.01 27.94) (xy -71.12 27.94)
 		)
 		(stroke
 			(width 0)
@@ -14632,6 +14590,16 @@
 	)
 	(wire
 		(pts
+			(xy 55.88 242.57) (xy 63.5 242.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c112a70e-eeff-41e2-8ff6-5bb23a6e2946")
+	)
+	(wire
+		(pts
 			(xy -52.07 -3.81) (xy -52.07 0)
 		)
 		(stroke
@@ -14709,16 +14677,6 @@
 			(type default)
 		)
 		(uuid "c45da93b-3df5-459c-8ac4-0bace44ea598")
-	)
-	(wire
-		(pts
-			(xy -6.35 7.62) (xy -6.35 11.43)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c4b9f38e-335a-49a1-82b8-2f1b28241035")
 	)
 	(wire
 		(pts
@@ -14909,16 +14867,6 @@
 			(type default)
 		)
 		(uuid "ce55af7a-e61c-46ad-9054-51e1dae54aa6")
-	)
-	(wire
-		(pts
-			(xy 21.59 243.84) (xy 22.86 243.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d081d1d7-4a54-454f-89bf-1cdc5e79cdc3")
 	)
 	(wire
 		(pts
@@ -15762,6 +15710,16 @@
 	)
 	(wire
 		(pts
+			(xy 55.88 232.41) (xy 63.5 232.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f1fad479-ad7f-4161-8def-4a45aaf19110")
+	)
+	(wire
+		(pts
 			(xy -36.83 -107.95) (xy -36.83 -105.41)
 		)
 		(stroke
@@ -15932,7 +15890,7 @@
 	)
 	(wire
 		(pts
-			(xy -6.35 -3.81) (xy -15.24 -3.81)
+			(xy -15.24 -3.81) (xy 1.27 -3.81)
 		)
 		(stroke
 			(width 0)
@@ -16022,7 +15980,7 @@
 	)
 	(wire
 		(pts
-			(xy -104.14 12.7) (xy -104.14 34.29)
+			(xy -104.14 27.94) (xy -104.14 34.29)
 		)
 		(stroke
 			(width 0)
@@ -17613,7 +17571,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 21.59 269.24 0)
+		(at 55.88 240.03 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -17624,7 +17582,7 @@
 		(fields_autoplaced yes)
 		(uuid "049a2d0b-49b9-4df9-925c-716761961682")
 		(property "Reference" "H4"
-			(at 24.765 267.335 0)
+			(at 59.055 238.125 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -17635,7 +17593,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 24.765 269.875 0)
+			(at 59.055 240.665 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17647,7 +17605,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad"
-			(at 21.59 269.24 0)
+			(at 55.88 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17658,7 +17616,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 21.59 269.24 0)
+			(at 55.88 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17669,7 +17627,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 21.59 269.24 0)
+			(at 55.88 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19794,7 +19752,7 @@
 	)
 	(symbol
 		(lib_id "Regulator_Linear:MCP1700x-330xxTT")
-		(at -87.63 12.7 0)
+		(at -87.63 27.94 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -19805,7 +19763,7 @@
 		(fields_autoplaced yes)
 		(uuid "25706ccc-415c-4a88-801c-6f81d2a4d3f8")
 		(property "Reference" "U1"
-			(at -87.63 6.35 0)
+			(at -87.63 21.59 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19815,7 +19773,7 @@
 			)
 		)
 		(property "Value" "ME6231"
-			(at -87.63 8.89 0)
+			(at -87.63 24.13 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -19825,7 +19783,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:SOT-23"
-			(at -87.63 6.985 0)
+			(at -87.63 22.225 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19836,7 +19794,7 @@
 			)
 		)
 		(property "Datasheet" "http://ww1.microchip.com/downloads/en/DeviceDoc/20001826D.pdf"
-			(at -87.63 12.7 0)
+			(at -87.63 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -19847,7 +19805,7 @@
 			)
 		)
 		(property "Description" "250mA Low Quiscent Current LDO, 3.3V output, SOT-23"
-			(at -87.63 12.7 0)
+			(at -87.63 27.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23794,7 +23752,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 21.59 260.985 0)
+		(at 63.5 229.87 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -23805,7 +23763,7 @@
 		(fields_autoplaced yes)
 		(uuid "63fe9d45-e4bd-48a2-ae4a-c65433d5fd7e")
 		(property "Reference" "H3"
-			(at 24.765 259.08 0)
+			(at 66.675 227.965 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -23816,7 +23774,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 24.765 261.62 0)
+			(at 66.675 230.505 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23828,7 +23786,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad"
-			(at 21.59 260.985 0)
+			(at 63.5 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23839,7 +23797,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 21.59 260.985 0)
+			(at 63.5 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -23850,7 +23808,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 21.59 260.985 0)
+			(at 63.5 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -24906,7 +24864,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 2.54 240.03 0)
+		(at 55.88 256.54 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -24917,7 +24875,7 @@
 		(fields_autoplaced yes)
 		(uuid "7ad6e884-aea9-49c1-9eba-99596f5813fb")
 		(property "Reference" "H5"
-			(at 5.715 238.125 0)
+			(at 59.055 254.635 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -24928,7 +24886,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 5.715 240.665 0)
+			(at 59.055 257.175 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -24940,7 +24898,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad"
-			(at 2.54 240.03 0)
+			(at 55.88 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -24951,7 +24909,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 2.54 240.03 0)
+			(at 55.88 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -24962,7 +24920,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 2.54 240.03 0)
+			(at 55.88 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26640,7 +26598,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 2.54 260.35 0)
+		(at 55.88 248.92 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -26651,7 +26609,7 @@
 		(fields_autoplaced yes)
 		(uuid "9f559f36-b6a6-40f8-92a2-e47ee7ecc4b6")
 		(property "Reference" "H7"
-			(at 5.715 258.445 0)
+			(at 59.055 247.015 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -26662,7 +26620,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 5.715 260.985 0)
+			(at 59.055 249.555 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26674,7 +26632,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad"
-			(at 2.54 260.35 0)
+			(at 55.88 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26685,7 +26643,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 2.54 260.35 0)
+			(at 55.88 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26696,7 +26654,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 2.54 260.35 0)
+			(at 55.88 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26799,7 +26757,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 21.59 240.665 0)
+		(at 63.5 256.54 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -26810,7 +26768,7 @@
 		(fields_autoplaced yes)
 		(uuid "a13bd4f5-6d57-4da4-ad8c-fba71e662e6e")
 		(property "Reference" "H1"
-			(at 24.765 238.76 0)
+			(at 66.675 254.635 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -26821,7 +26779,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 24.765 241.3 0)
+			(at 66.675 257.175 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26833,7 +26791,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad"
-			(at 21.59 240.665 0)
+			(at 63.5 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26844,7 +26802,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 21.59 240.665 0)
+			(at 63.5 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26855,7 +26813,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 21.59 240.665 0)
+			(at 63.5 256.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -27198,85 +27156,6 @@
 			(project "astrouniboard"
 				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
 					(reference "R15")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Jumper:SolderJumper_2_Open")
-		(at -267.97 55.88 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "aa145c00-7ec8-450b-b5c6-edfc729598ba")
-		(property "Reference" "JP2"
-			(at -267.97 49.53 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SolderJumper_2_Open"
-			(at -268.478 61.214 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "myLib_SMD:Micro SolderJumper"
-			(at -267.97 55.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at -267.97 55.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Solder Jumper, 2-pole, open"
-			(at -267.97 55.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "1cd1a562-98c6-4b25-aa97-5d743ce46202")
-		)
-		(pin "2"
-			(uuid "770247f8-d857-4492-9550-12ddd70cc0bb")
-		)
-		(instances
-			(project "astrouniboard"
-				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
-					(reference "JP2")
 					(unit 1)
 				)
 			)
@@ -29416,7 +29295,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 2.54 250.19 0)
+		(at 55.88 229.87 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -29427,7 +29306,7 @@
 		(fields_autoplaced yes)
 		(uuid "c3a34db0-3df1-4bc5-b956-55ed8a8b560e")
 		(property "Reference" "H6"
-			(at 5.715 248.285 0)
+			(at 59.055 227.965 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -29438,7 +29317,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 5.715 250.825 0)
+			(at 59.055 230.505 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -29450,7 +29329,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad"
-			(at 2.54 250.19 0)
+			(at 55.88 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -29461,7 +29340,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 2.54 250.19 0)
+			(at 55.88 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -29472,7 +29351,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 2.54 250.19 0)
+			(at 55.88 229.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -30271,88 +30150,6 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at -6.35 3.81 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "cc00f5a8-652a-4e80-bc58-aeab2581fdd5")
-		(property "Reference" "C53"
-			(at -2.54 3.175 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "100nF"
-			(at -2.54 5.715 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at -5.3848 7.62 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at -6.35 3.81 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at -6.35 3.81 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e5105788-294d-4439-840f-7d9c76c9c3ab")
-		)
-		(pin "2"
-			(uuid "3db25533-5299-4095-a69b-d9c6ac177271")
-		)
-		(instances
-			(project "astrouniboard"
-				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
-					(reference "C53")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
 		(at -185.42 304.8 180)
 		(unit 1)
 		(body_style 1)
@@ -30435,7 +30232,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 2.54 269.24 0)
+		(at 63.5 240.03 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -30446,7 +30243,7 @@
 		(fields_autoplaced yes)
 		(uuid "cf16c3d5-1445-496e-bf33-459cd91c6038")
 		(property "Reference" "H8"
-			(at 5.715 267.335 0)
+			(at 66.675 238.125 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -30457,7 +30254,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 5.715 269.875 0)
+			(at 66.675 240.665 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -30469,7 +30266,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad"
-			(at 2.54 269.24 0)
+			(at 63.5 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -30480,7 +30277,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 2.54 269.24 0)
+			(at 63.5 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -30491,7 +30288,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 2.54 269.24 0)
+			(at 63.5 240.03 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -31107,86 +30904,6 @@
 			(project "astrouniboard"
 				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
 					(reference "#PWR048")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Jumper:SolderJumper_2_Open")
-		(at -267.97 52.07 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "dafd0a3f-cf41-4a58-b804-458b88ccced7")
-		(property "Reference" "JP1"
-			(at -267.97 45.72 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "SolderJumper_2_Open"
-			(at -267.97 48.26 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "myLib_SMD:Micro SolderJumper"
-			(at -267.97 52.07 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at -267.97 52.07 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Solder Jumper, 2-pole, open"
-			(at -267.97 52.07 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "35f89777-45d3-4bc9-83ec-bb8bf8e4af99")
-		)
-		(pin "2"
-			(uuid "ba533cd0-5ef6-473f-857b-c3ad980bfbf4")
-		)
-		(instances
-			(project "astrouniboard"
-				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
-					(reference "JP1")
 					(unit 1)
 				)
 			)
@@ -31915,7 +31632,7 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
-		(at 21.59 250.19 0)
+		(at 63.5 248.92 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -31926,7 +31643,7 @@
 		(fields_autoplaced yes)
 		(uuid "e4eebe39-83f9-4d21-bb36-f4ce589afc45")
 		(property "Reference" "H2"
-			(at 24.765 248.285 0)
+			(at 66.675 247.015 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -31937,7 +31654,7 @@
 			)
 		)
 		(property "Value" "MountingHole_Pad"
-			(at 24.765 250.825 0)
+			(at 66.675 249.555 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -31949,7 +31666,7 @@
 			)
 		)
 		(property "Footprint" "MountingHole:MountingHole_2.2mm_M2_DIN965_Pad"
-			(at 21.59 250.19 0)
+			(at 63.5 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -31960,7 +31677,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 21.59 250.19 0)
+			(at 63.5 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -31971,7 +31688,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 21.59 250.19 0)
+			(at 63.5 248.92 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
