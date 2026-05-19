@@ -56,10 +56,14 @@
 #define BMP280_0x77                 4      // BMP280 on I2C (at address 0x77)
 #define BMP280_0x76                 5      // BMP280 on I2C (at address 0x76)
 #define BMP280_SPI                  6      // BMP280 on SPI (default CS)
-#define SHT31                       7      // SHT31 on I2C (at default address 0x44)
-#define SHT31_0x44                  7      // SHT31 on I2C (at address 0x44)
-#define SHT31_0x45                  8      // SHT31 on I2C (at address 0x45)
+#define SHT31                       7      // SHT31 on I2C (at address 0x45, ADDR pin high)
+#define SHT31_0x45                  7      // SHT31 on I2C (at address 0x45)
+#define SHT31_EXT                   8      // SHT31 on I2C (at address 0x44, ADDR pin low, external sensor)
+#define SHT31_0x44                  8      // SHT31 on I2C (at address 0x44)
 #define WEATHER_LAST                8
+
+// HOME SENSE device (for AXIS3_SENSE_HOME)
+#define MPU6000                     100    // MPU6000 accelerometer, IMU-based homing via I2C
 
 // STEP WAVE FORM
 #define STEP_WAVE_FORM_FIRST        1
@@ -184,5 +188,6 @@
 #define NV_ROTATOR_SETTINGS_BASE    1003   // bytes: 11  , 11
 #define NV_FEATURE_SETTINGS_BASE    1014   // bytes: 5 *8, 40
 #define NV_TELESCOPE_SETTINGS_BASE  1054   // bytes: 2   , 2
+#define NV_ROTATOR_IMU_HOME         1056   // bytes: 4   , 4
 
-#define NV_LAST                     1055
+#define NV_LAST                     1060

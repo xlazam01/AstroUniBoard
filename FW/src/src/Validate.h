@@ -93,6 +93,10 @@
   #error "Configuration (Config.h): Setting WEATHER unknown, use OFF or valid WEATHER SENSOR (from Constants.h)"
 #endif
 
+#if SHT31_POWER_PIN != OFF && SHT31_POWER_PIN < 0
+  #error "Configuration (Config.h): Setting SHT31_POWER_PIN unknown, use OFF or a valid microcontroller pin designation."
+#endif
+
 #if STEP_WAVE_FORM < STEP_WAVE_FORM_FIRST || STEP_WAVE_FORM > STEP_WAVE_FORM_LAST
   #error "Configuration (Config.h): Setting STEP_WAVE_FORM unknown, use a valid STEP WAVE FORM (from Constants.h)"
 #endif
@@ -575,7 +579,7 @@
 #endif
 
 #if (AXIS3_SENSE_HOME) != OFF && (AXIS3_SENSE_HOME) < 0
-  #error "Configuration (Config.h): Setting AXIS3_SENSE_HOME unknown, use OFF or HIGH/LOW and HYST() and/or THLD() as described in comments."
+  #error "Configuration (Config.h): Setting AXIS3_SENSE_HOME unknown, use OFF, HIGH/LOW (pin sense), or MPU6000 (IMU)."
 #endif
 
 #if (AXIS3_SENSE_LIMIT_MIN) != OFF && (AXIS3_SENSE_LIMIT_MIN) < 0

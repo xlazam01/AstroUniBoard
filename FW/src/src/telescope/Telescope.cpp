@@ -199,7 +199,7 @@ void Telescope::init(const char *fwName, int fwMajor, int fwMinor, const char *f
     VF("MSG: System, start MCU temperature monitor task (rate 500ms priority 7)... ");
     if (tasks.add(500, 0, true, 6, mcuTempWrapper, "SysTemp")) { VLF("success"); } else { VLF("FAILED!"); }
   }
-  weather.init();
+  if (!weather.init()) initError.weather = true;
   temperature.init();
 
   #if OPERATIONAL_MODE == WIFI && WEB_SERVER == ON

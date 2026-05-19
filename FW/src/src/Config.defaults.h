@@ -175,6 +175,10 @@
 #define WEATHER                       OFF
 #endif
 
+#ifndef SHT31_POWER_PIN
+#define SHT31_POWER_PIN               OFF
+#endif
+
 // step signal
 #ifndef STEP_WAVE_FORM
 #define STEP_WAVE_FORM                PULSE
@@ -940,6 +944,15 @@
 #endif
 #ifndef AXIS3_SENSE_HOME_DIST_LIMIT
 #define AXIS3_SENSE_HOME_DIST_LIMIT   180.0                       // max home sense distance in degrees
+#endif
+#ifndef AXIS3_HOME_AUTO
+#define AXIS3_HOME_AUTO               OFF
+#endif
+#ifndef MPU6000_I2C_ADDRESS
+#define MPU6000_I2C_ADDRESS           0x68
+#endif
+#ifndef AXIS3_IMU_HOME_TOLERANCE
+#define AXIS3_IMU_HOME_TOLERANCE      1.0                         // IMU homing tolerance in degrees
 #endif
 #ifndef AXIS3_SENSE_LIMIT_MIN
 #define AXIS3_SENSE_LIMIT_MIN         OFF

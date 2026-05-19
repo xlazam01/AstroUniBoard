@@ -42,8 +42,22 @@ bool Rotator::init() {
   if (!nv.hasValidKey()) {
     VLF("MSG: Rotator, writing defaults to NV");
     nv.updateBytes(NV_ROTATOR_SETTINGS_BASE + RotatorSettingsSize, &settings, sizeof(RotatorSettings));
+    #if AXIS3_SENSE_HOME == MPU6000
+      float defaultHome = 0.0f;
+      nv.updateBytes(NV_ROTATOR_IMU_HOME, &defaultHome, sizeof(float));
+    #endif
   }
   readSettings();
+
+  #if AXIS3_SENSE_HOME == MPU6000
+    if (!imu.init(MPU6000_I2C_ADDRESS)) {
+      DLF("WRN: Rotator::init(), MPU6000 not found at I2C address");
+    } else {
+      VLF("MSG: Rotator, MPU6000 IMU initialized");
+      nv.readBytes(NV_ROTATOR_IMU_HOME, &imuHomeAngle, sizeof(float));
+      if (isnan(imuHomeAngle) || imuHomeAngle < -360.0f || imuHomeAngle > 360.0f) imuHomeAngle = 0.0f;
+    }
+  #endif
 
   VLF("MSG: Rotator, init (Axis3)");
   if (!axis3.init(&motor3)) {
@@ -81,6 +95,10 @@ void Rotator::begin() {
   #endif
 
   unpark();
+
+  #if AXIS3_SENSE_HOME == MPU6000 && AXIS3_HOME_AUTO == ON
+    imuHome();
+  #endif
 }
 
 // get backlash in steps
@@ -91,7 +109,7 @@ int Rotator::getBacklash() {
 // set backlash in steps
 CommandError Rotator::setBacklash(int value) {
   if (!ready) return CE_CMD_UNKNOWN;
-  
+
   if (value < 0 || value > 10000) return CE_PARAM_RANGE;
   if (settings.parkState >= PS_PARKED) return CE_PARKED;
 
@@ -101,6 +119,83 @@ CommandError Rotator::setBacklash(int value) {
 
   return CE_NONE;
 }
+
+#if AXIS3_SENSE_HOME == MPU6000
+
+#ifndef M_PI
+  #define M_PI 3.14159265358979323846f
+#endif
+
+#define IMU_HOME_MAX_PASSES  2      // correction passes after the initial move
+#define IMU_HOME_SETTLE_DEG  1.5f   // stop correcting when within this many degrees
+
+// slew to IMU home angle via shortest path
+CommandError Rotator::imuHome() {
+  if (!ready) return CE_CMD_UNKNOWN;
+  if (settings.parkState >= PS_PARKED) return CE_PARKED;
+
+  // Average 5 samples over 100 ms for a stable reading (handles power-on noise)
+  float sumX = 0.0f, sumZ = 0.0f;
+  int count = 0;
+  for (int i = 0; i < 5; i++) {
+    int16_t ax, ay, az;
+    if (imu.readAccel(ax, ay, az)) { sumX += (float)ax; sumZ += (float)az; count++; }
+    delay(20);
+  }
+  if (count == 0) return CE_SLEW_ERR_UNSPECIFIED;
+  float currentAngle = atan2f(sumX / count, sumZ / count) * (180.0f / M_PI);
+
+  // Sync axis3 to the true physical position before computing the goto target.
+  // NV-stored position may be stale after a reflash or manual rotation.
+  // IMU returns [-180, +180]; axis3 uses [0, 360] with home at 0°.
+  // Negative IMU means rotator is past the ±180° wrap (axis3 in (180°, 360°]).
+  float physAxis3 = currentAngle;
+  if (physAxis3 < 0.0f) physAxis3 += 360.0f;
+  if (physAxis3 < AXIS3_LIMIT_MIN) physAxis3 = AXIS3_LIMIT_MIN;
+  if (physAxis3 > AXIS3_LIMIT_MAX) physAxis3 = AXIS3_LIMIT_MAX;
+  axis3.setInstrumentCoordinate(physAxis3);
+
+  float delta = imuHomeAngle - currentAngle;
+  while (delta > 180.0f)  delta -= 360.0f;
+  while (delta < -180.0f) delta += 360.0f;
+
+  float target = physAxis3 + delta;
+  if (target < AXIS3_LIMIT_MIN) target = AXIS3_LIMIT_MIN;
+  if (target > AXIS3_LIMIT_MAX) target = AXIS3_LIMIT_MAX;
+
+  dbgIMU = currentAngle; dbgPhys = physAxis3; dbgDelta = delta; dbgTarget = target;
+
+  imuHomingPass = 0;
+  imuHoming = true;
+  return gotoTarget(target);
+}
+
+// calibrate IMU home angle from N-sample average of current orientation
+// gravRef=true: hardcoded 0.0° (gravity reference); gravRef=false: measured average
+CommandError Rotator::imuCalibrate(bool gravRef) {
+  if (gravRef) {
+    imuHomeAngle = 0.0f;
+  } else {
+    const int N = 10;
+    float sumX = 0.0f, sumZ = 0.0f;
+    int count = 0;
+    for (int i = 0; i < N; i++) {
+      int16_t ax, ay, az;
+      if (imu.readAccel(ax, ay, az)) {
+        sumX += (float)ax;
+        sumZ += (float)az;
+        count++;
+      }
+      delay(20);
+    }
+    if (count == 0) return CE_SLEW_ERR_UNSPECIFIED;
+    imuHomeAngle = atan2f(-(sumX / count), -(sumZ / count)) * (180.0f / M_PI);
+  }
+  nv.updateBytes(NV_ROTATOR_IMU_HOME, &imuHomeAngle, sizeof(float));
+  return CE_NONE;
+}
+
+#endif // AXIS3_SENSE_HOME == MPU6000
 
 #ifdef MOUNT_PRESENT
   // returns parallactic angle in degrees
@@ -316,6 +411,34 @@ void Rotator::monitor() {
         axis3.setBacklashSteps(getBacklash());
         homing = false;
       }
+
+      #if AXIS3_SENSE_HOME == MPU6000
+        if (imuHoming) {
+          float currentAngle = imu.angle();
+          if (!isnan(currentAngle)) {
+            float delta = imuHomeAngle - currentAngle;
+            while (delta > 180.0f)  delta -= 360.0f;
+            while (delta < -180.0f) delta += 360.0f;
+            if (fabsf(delta) > IMU_HOME_SETTLE_DEG && imuHomingPass < IMU_HOME_MAX_PASSES) {
+              imuHomingPass++;
+              float target = (float)axis3.getInstrumentCoordinate() + delta;
+              if (target < AXIS3_LIMIT_MIN) target = AXIS3_LIMIT_MIN;
+              if (target > AXIS3_LIMIT_MAX) target = AXIS3_LIMIT_MAX;
+              gotoTarget(target);
+            } else {
+              axis3.resetPosition(0.0);
+              axis3.setBacklashSteps(getBacklash());
+              settings.position = 0.0f;
+              writeSettings();
+              imuHoming = false;
+              imuHomingPass = 0;
+            }
+          } else {
+            imuHoming = false;
+            imuHomingPass = 0;
+          }
+        }
+      #endif
 
       // delayed write of rotator position
       if (ROTATOR_WRITE_DELAY != 0) {

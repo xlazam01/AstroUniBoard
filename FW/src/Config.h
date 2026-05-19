@@ -38,10 +38,11 @@
 #define RETICLE_LED_INVERT            OFF //    OFF, ON Inverts control for cases where 0V is max brightness.                 Option
 
 // WEATHER SENSOR --------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#WEATHER_SENSOR
-#define WEATHER                      SHT31 //    OFF, BME280 (I2C 0x77,) BME280_0x76, BME280_SPI (see pinmap for CS.)          Option
+#define WEATHER                      SHT31_EXT //    OFF, BME280 (I2C 0x77,) BME280_0x76, BME280_SPI (see pinmap for CS.)          Option
                                           //         BMP280 (I2C 0x77,) BMP280_0x76, BMP280_SPI (see pinmap for CS.)
-                                          //         SHT31 (I2C 0x44,) SHT31_0x45. Temperature and humidity, no pressure.
+                                          //         SHT31 (I2C 0x45,) SHT31_EXT (I2C 0x44). Temperature and humidity, no pressure.
                                           //         BME280 or BMP280 for temperature, pressure.  BME280 for humidity also.
+#define SHT31_POWER_PIN               PB9 //    OFF, n. Switches SHT31 supply on before init/readout and off afterward.       Option
 
 // SIGNALING ------------------------------------------- see https://onstep.groups.io/g/main/wiki/Configuration_Controller#SIGNALING
 #define STEP_WAVE_FORM             SQUARE // SQUARE, PULSE Step signal wave form faster rates. SQUARE best signal integrity.  Adjust
@@ -238,8 +239,8 @@
 
 // If runtime axis settings are enabled changes in the section below will be ignored (disable in SWS or by wiping NV/EEPROM):
 // \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/ \/
-#define AXIS3_STEPS_PER_DEGREE       133.33 //   64.0, n. Number of steps per degree for rotator/de-rotator.                    Adjust
-                                          //         (400 steps/rev * 16 microsteps * 7.5:1 gear ratio) / 360 = 133.33
+#define AXIS3_STEPS_PER_DEGREE       88.889 //   64.0, n. Number of steps per degree for rotator/de-rotator.                    Adjust
+                                          //         (200 steps/rev * 16 microsteps * 10:1 gear ratio) / 360 = 88.889
                                           //         Alt/Az de-rotation: n = (num_circumference_pixels * 2)/360, minimum
 #define AXIS3_REVERSE                 OFF //    OFF, ON Reverses movement direction, or reverse wiring instead to correct.    Option
 #define AXIS3_LIMIT_MIN                 0 //      0, n. Where n=-360..0 (degrees.) Minimum allowed rotator angle.             Infreq
@@ -249,8 +250,8 @@
 #define AXIS3_DRIVER_MICROSTEPS_GOTO  OFF //    OFF, n. Microstep mode used during slews. OFF uses _DRIVER_MICROSTEPS.        Option
 
 // for TMC2130, TMC5160, TMC2209, TMC2226 STEP/DIR driver models:
-#define AXIS3_DRIVER_IHOLD            OFF //    OFF, n, (mA.) Current during standstill. OFF uses IRUN/2.0                    Option
-#define AXIS3_DRIVER_IRUN             600 //    OFF, n, (mA.) Current during tracking, appropriate for stepper/driver/etc.    Option
+#define AXIS3_DRIVER_IHOLD            500 //    OFF, n, (mA.) Current during standstill. OFF uses IRUN/2.0                    Option
+#define AXIS3_DRIVER_IRUN             650 //    OFF, n, (mA.) Current during tracking, appropriate for stepper/driver/etc.    Option
 #define AXIS3_DRIVER_IGOTO            OFF //    OFF, n, (mA.) Current during slews. OFF uses IRUN.                            Option
 // /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /
 
@@ -261,7 +262,9 @@
 
 #define AXIS3_POWER_DOWN              OFF //    OFF, ON Powers off 30 seconds after movement stops.                           Option
 
-#define AXIS3_SENSE_HOME              OFF //    OFF, HIGH or LOW enables & state clockwise home position, as seen from above. Option
+#define AXIS3_SENSE_HOME           MPU6000 //    OFF, HIGH/LOW for pin-based sense, MPU6000 for IMU-based homing.             Option
+#define AXIS3_HOME_AUTO               ON  //    OFF, ON auto-home rotator via IMU on power-up.                               Option
+#define MPU6000_I2C_ADDRESS          0x68 //   0x68, MPU6000 I2C address. 0x68 if AD0=GND, 0x69 if AD0=VCC.                 Adjust
 #define AXIS3_SENSE_LIMIT_MIN         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 #define AXIS3_SENSE_LIMIT_MAX         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option
 
@@ -289,7 +292,7 @@
 
 // for TMC2130, TMC5160, TMC2209, TMC2226 STEP/DIR driver models:
 #define AXIS4_DRIVER_IHOLD            OFF //    OFF, n, (mA.) Current during standstill. OFF uses IRUN/2.0                    Option
-#define AXIS4_DRIVER_IRUN             700 //    OFF, n, (mA.) Current during tracking, appropriate for stepper/driver/etc.    Option
+#define AXIS4_DRIVER_IRUN             900 //    OFF, n, (mA.) Current during tracking, appropriate for stepper/driver/etc.    Option
 #define AXIS4_DRIVER_IGOTO            OFF //    OFF, n, (mA.) Current during slews. OFF uses IRUN.                            Option
 // /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /\ /
 
@@ -298,7 +301,7 @@
 #define AXIS4_DRIVER_DECAY            SPREADCYCLE //    OFF, Tracking decay mode default override. TMC default is STEALTHCHOP.        Infreq
 #define AXIS4_DRIVER_DECAY_GOTO       SPREADCYCLE //    OFF, Decay mode goto default override. TMC default is SPREADCYCLE.            Infreq
 
-#define AXIS4_POWER_DOWN              OFF //    OFF, ON Powers off 30 seconds after movement stops.                           Option
+#define AXIS4_POWER_DOWN              ON //    OFF, ON Powers off 30 seconds after movement stops.                           Option
 
 #define AXIS4_SENSE_HOME              OFF //    OFF, HIGH or LOW enables & state clockwise home position, as seen from above. Option
 #define AXIS4_SENSE_LIMIT_MIN         OFF //    OFF, HIGH or LOW state on limit sense switch stops movement.                  Option

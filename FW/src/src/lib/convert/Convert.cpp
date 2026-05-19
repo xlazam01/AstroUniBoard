@@ -19,6 +19,15 @@ void strncpyex(char *result, const char *source, size_t length) {
   }
 #else
   void sprintF(char *result, const char *source, double f) {
+    if (isnan(f)) {
+      strcpy(result, "nan");
+      return;
+    }
+    if (isinf(f)) {
+      if (f > 0.0) strcpy(result, "inf"); else strcpy(result, "-inf");
+      return;
+    }
+
     bool ok = false;
     uint8_t mas = 0, frac = 0, len = 0;
     char* a;

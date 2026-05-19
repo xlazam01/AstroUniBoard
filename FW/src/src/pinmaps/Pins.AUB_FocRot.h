@@ -5,6 +5,7 @@
 // Custom PCB with STM32G0B1CBT6 (48-pin LQFP)
 // 128 KB Flash, 144 KB SRAM, ARM Cortex-M0+ @ 64 MHz
 // Two TMC2209 drivers on shared UART2, 24AA64 I2C EEPROM, SHT31 I2C sensor
+// SHT31 supply switching is configured separately via SHT31_POWER_PIN in Config.h
 //
 // OnStepX axis convention: AXIS3 = Rotator, AXIS4 = Focuser
 
@@ -16,7 +17,23 @@
   #define SERIAL_A              SerialUSB
 #endif
 
-// I2C pins ----------------------------------------------------------------------------------------
+// I2C bus (shared) --------------------------------------------------------------------------------
+// PA9  = SCL, PA10 = SDA  (Wire / HAL_WIRE)
+// Devices on bus:
+//   0x44 - SHT31 weather sensor (temp/humidity); powered via SHT31_POWER_PIN = PB9
+//   0x57 - 24AA64 EEPROM (NV storage)
+//   0x68 - MPU6000 accelerometer (AXIS3 rotator IMU homing)
+//            Chip is mounted PCB-side up, connector side down (flipped vs. gravity).
+//            Effective gravity vector lands on +Z axis of the chip.
+//            angle() = atan2(ax, az)  → 0° when rotator is at mechanical home.
+//            Home angle stored in NV at NV_ROTATOR_IMU_HOME (addr 1056, float).
+//            Enable via AXIS3_SENSE_HOME MPU6000 in Config.h.
+//            Auto-home on power-up via AXIS3_HOME_AUTO ON in Config.h.
+//            Homing commands:
+//              :rC#   - go to stored home position
+//              :rHA#  - query current IMU angle (degrees, 1 decimal)
+//              :rHS#  - save current orientation as home (10-sample average)
+//              :rHG#  - save gravity reference (0.0°) as home
 #define I2C_SDA_PIN             PA10
 #define I2C_SCL_PIN             PA9
 
@@ -37,9 +54,9 @@
 #if PINMAP == AUB_FOCROT
 
 // AXIS3 - Rotator (TMC2209) ----------------------------------------------------------------------
-#define AXIS3_STEP_PIN          PB9
-#define AXIS3_DIR_PIN           PB8
-#define AXIS3_ENABLE_PIN        PB7
+#define AXIS3_STEP_PIN          PB15
+#define AXIS3_DIR_PIN           PB14
+#define AXIS3_ENABLE_PIN        PB13
 #define AXIS3_M0_PIN            OFF              // MS1 hardwired HIGH (TMC UART addr 1)
 #define AXIS3_M1_PIN            OFF              // MS2 hardwired LOW  (TMC UART addr 1)
 

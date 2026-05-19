@@ -10,6 +10,9 @@
 
 #include "../../../lib/nv/Nv.h"
 #include "../../../lib/axis/Axis.h"
+#if AXIS3_SENSE_HOME == MPU6000
+  #include "../../../lib/imu/MPU6000.h"
+#endif
 #include "../../../libApp/commands/ProcessCmds.h"
 #include "../../Telescope.h"
 #include "../../mount/coordinates/Transform.h"
@@ -95,6 +98,17 @@ private:
 
   void readSettings();
   void writeSettings();
+
+  #if AXIS3_SENSE_HOME == MPU6000
+    CommandError imuHome();
+    CommandError imuCalibrate(bool gravRef);
+    MPU6000Imu imu;
+    float imuHomeAngle = 0.0f;
+    bool imuHoming = false;
+    int imuHomingPass = 0;
+    // last imuHome() snapshot — query with :rHD#
+    float dbgIMU = 0.0f, dbgPhys = 0.0f, dbgDelta = 0.0f, dbgTarget = 0.0f;
+  #endif
 
   float moveRate = 0.1;  // in degs/sec
 

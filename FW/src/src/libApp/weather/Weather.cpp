@@ -4,6 +4,7 @@
 #include "Weather.h"
 
 #include "../../lib/tasks/OnTask.h"
+#include "../../lib/gpioEx/GpioEx.h"
 
 extern bool xBusy;
 
@@ -39,14 +40,62 @@ extern bool xBusy;
 #endif
 
 // SHT31 is temperature + humidity (no pressure)
-#if WEATHER == SHT31 || WEATHER == SHT31_0x45
+#if WEATHER == SHT31 || WEATHER == SHT31_0x45 || WEATHER == SHT31_EXT
   #include <Adafruit_SHT31.h>             // https://github.com/adafruit/Adafruit_SHT31
-  #if WEATHER == SHT31
+  #if WEATHER == SHT31_EXT || WEATHER == SHT31_0x44
     #define SHT31_ADDRESS 0x44
   #else
     #define SHT31_ADDRESS 0x45
   #endif
+  #define SHT31_POWER_SETTLE_MS 30
+  #define SHT31_READ_RETRIES 2
   Adafruit_SHT31 sht31(&HAL_WIRE);
+
+  void sht31PowerOff() {
+    if (SHT31_POWER_PIN != OFF) digitalWriteEx(SHT31_POWER_PIN, LOW);
+  }
+
+  void sht31PowerOn() {
+    if (SHT31_POWER_PIN != OFF) {
+      digitalWriteEx(SHT31_POWER_PIN, HIGH);
+      delay(SHT31_POWER_SETTLE_MS);
+    }
+  }
+
+  void sht31PowerInit() {
+    if (SHT31_POWER_PIN != OFF) {
+      pinModeEx(SHT31_POWER_PIN, OUTPUT);
+      sht31PowerOff();
+    }
+  }
+
+  bool sht31PowerBegin() {
+    #if WEATHER != SHT31_EXT
+      sht31PowerOn();
+    #endif
+    bool success = sht31.begin(SHT31_ADDRESS);
+    #if WEATHER != SHT31_EXT
+      sht31PowerOff();
+    #endif
+    return success;
+  }
+
+  bool sht31PowerRead(float *temperatureOut, float *humidityOut) {
+    #if WEATHER == SHT31_EXT
+      // always-powered external sensor: skip power cycling and re-init
+      return sht31.readBoth(temperatureOut, humidityOut);
+    #else
+      for (int i = 0; i < SHT31_READ_RETRIES; i++) {
+        sht31PowerOn();
+        bool success = sht31.begin(SHT31_ADDRESS);
+        if (success) success = sht31.readBoth(temperatureOut, humidityOut);
+        sht31PowerOff();
+        if (success) return true;
+        delay(2);
+      }
+      return false;
+    #endif
+  }
 #endif
 
 void weatherPollWrapper() { weather.poll(); }
@@ -74,8 +123,9 @@ bool Weather::init() {
         bmx.setSampling(Adafruit_BMP280::MODE_FORCED, Adafruit_BMP280::SAMPLING_X1, Adafruit_BMP280::SAMPLING_X1, Adafruit_BMP280::FILTER_OFF);
         weatherSensor = WS_BMP280; success = true;
       } else { DLF("WRN: Weather.init(), BMP280 (SPI) not found"); }
-    #elif WEATHER == SHT31 || WEATHER == SHT31_0x45
-      if (sht31.begin(SHT31_ADDRESS)) {
+    #elif WEATHER == SHT31 || WEATHER == SHT31_0x45 || WEATHER == SHT31_EXT
+      sht31PowerInit();
+      if (sht31PowerBegin()) {
         weatherSensor = WS_SHT31; success = true;
       } else { DF("WRN: Weather.init(), SHT31 (I2C 0x"); if (DEBUG != OFF) SERIAL_DEBUG.print(SHT31_ADDRESS, HEX); DLF(") not found"); }
     #else
@@ -83,7 +133,7 @@ bool Weather::init() {
     #endif
 
     // follow any I2C device in-library init with a reset of the I2C bus speed
-    #if WEATHER == BME280 || WEATHER == BME280_0x76 || WEATHER == BMP280_0x76 || WEATHER == BMP280 || WEATHER == SHT31 || WEATHER == SHT31_0x45
+    #if WEATHER == BME280 || WEATHER == BME280_0x76 || WEATHER == BMP280_0x76 || WEATHER == BMP280 || WEATHER == SHT31 || WEATHER == SHT31_0x45 || WEATHER == SHT31_EXT
       #ifdef HAL_WIRE_RESET_AFTER_CONNECT
         HAL_WIRE.end();
         HAL_WIRE.begin();
@@ -105,11 +155,13 @@ bool Weather::init() {
 void Weather::poll() {
   #if WEATHER != OFF
     if (success && !xBusy) {
-      #if WEATHER == SHT31 || WEATHER == SHT31_0x45
-        // SHT31: read temperature and humidity via Adafruit library
-        temperature = sht31.readTemperature();
+      #if WEATHER == SHT31 || WEATHER == SHT31_0x45 || WEATHER == SHT31_EXT
+        // SHT31: read temperature and humidity in one powered transaction
+        if (!sht31PowerRead(&temperature, &humidity)) {
+          temperature = NAN;
+          humidity = NAN;
+        }
         if (!isnan(temperature) && (temperature < -60.0F || temperature > 60.0F)) temperature = NAN;
-        humidity = sht31.readHumidity();
         if (!isnan(humidity) && (humidity < 0.0F || humidity > 100.0F)) humidity = NAN;
 
         // if any measurement is anomalous assume all are invalid

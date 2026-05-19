@@ -105,6 +105,9 @@ bool Rotator::command(char *reply, char *command, char *parameter, bool *suppres
         axis3.autoSlewAbort();
         homing = false;
       } else axis3.autoSlewStop();
+      #if AXIS3_SENSE_HOME == MPU6000
+        imuHoming = false;
+      #endif
       *numericReply = false;
     } else
 
@@ -196,23 +199,61 @@ bool Rotator::command(char *reply, char *command, char *parameter, bool *suppres
       *numericReply = false;
     } else
 
-    // :rC#       Move rotator to half-travel target position
+    // :rC#       Move rotator to home position
     //            Returns: Nothing
     if (command[1] == 'C') {
-      if (AXIS3_SENSE_HOME != OFF) {
+      #if AXIS3_SENSE_HOME == MPU6000
+        if (settings.parkState == PS_UNPARKED) {
+          *commandError = imuHome();
+        } else *commandError = CE_PARKED;
+      #elif AXIS3_SENSE_HOME != OFF
         if (settings.parkState == PS_UNPARKED) {
           axis3.enable(true);
           axis3.setFrequencySlew(settings.gotoRate);
           *commandError = axis3.autoSlewHome();
-          if (*commandError == CE_NONE) {
-            homing = true;
-          }
+          if (*commandError == CE_NONE) homing = true;
         } else *commandError = CE_PARKED;
-      } else {
+      #else
         *commandError = gotoTarget((axis3.getLimitMax() + axis3.getLimitMin())/2.0F);
-      }
+      #endif
       *numericReply = false;
     } else
+
+    // IMU homing commands (only when MPU6000 is configured)
+    // command = "rH", parameter = "A"/"S"/"G" respectively
+    #if AXIS3_SENSE_HOME == MPU6000
+    // :rHA#      Get current IMU angle
+    //            Returns: d.d# (degrees, one decimal place)
+    if (command[1] == 'H' && parameter[0] == 'A' && parameter[1] == 0) {
+      float a = imu.angle();
+      if (!isnan(a)) sprintF(reply, "%0.1f", a); else strcpy(reply, "NAN");
+      *numericReply = false;
+    } else
+
+    // :rHS#      Set home from current IMU orientation (10-sample average)
+    //            Return: 0 on failure
+    //                    1 on success
+    if (command[1] == 'H' && parameter[0] == 'S' && parameter[1] == 0) {
+      *commandError = imuCalibrate(false);
+    } else
+
+    // :rHG#      Set home to gravity reference (reset to 0.0 deg)
+    //            Return: 0 on failure
+    //                    1 on success
+    if (command[1] == 'H' && parameter[0] == 'G' && parameter[1] == 0) {
+      *commandError = imuCalibrate(true);
+    } else
+
+    // :rHD#      Debug: last imuHome() snapshot (values *10 as integers)
+    //            Returns: "i=NNN p=NNN d=NNN t=NNN h=NNN"  (divide by 10 for deg)
+    if (command[1] == 'H' && parameter[0] == 'D' && parameter[1] == 0) {
+      sprintf(reply, "i=%d p=%d d=%d t=%d h=%d",
+              (int)(dbgIMU*10), (int)(dbgPhys*10),
+              (int)(dbgDelta*10), (int)(dbgTarget*10),
+              (int)(imuHomeAngle*10));
+      *numericReply = false;
+    } else
+    #endif
 
     // :r+#       Derotator Enable
     //            Returns: Nothing
