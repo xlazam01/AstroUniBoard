@@ -13,7 +13,8 @@ AstroUniBoard/
 ├── HW/                     # Hardware (PCB designs, schematics — KiCad)
 └── docs/
     ├── HARDWARE.md         # Pin assignments and hardware overview
-    └── FIRMWARE.md         # Build and upload guide
+    ├── FIRMWARE.md         # Build and upload guide
+    └── USE_CASES.md        # Other possible applications + rev 3 ideas
 ```
 
 ## Hardware
@@ -38,7 +39,7 @@ AstroUniBoard/
 
 Mount axes (AXIS1/AXIS2) are disabled — this board is focuser/rotator only.
 
-See [docs/HARDWARE.md](docs/HARDWARE.md) for full pin assignments.
+See [docs/HARDWARE.md](docs/HARDWARE.md) for full pin assignments, and [docs/USE_CASES.md](docs/USE_CASES.md) for other applications the hardware supports.
 
 ## Firmware
 
