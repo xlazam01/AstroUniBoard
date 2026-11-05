@@ -111,7 +111,7 @@ upload_firmware("f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo
 ### "dfu-util not found"
 **Cause:** dfu-util not in PATH
 **Solution:**
-- Verify path: `c:\Users\marti\.platformio\packages\tool-dfuutil\bin\dfu-util.exe`
+- Verify path: `%USERPROFILE%\.platformio\packages\tool-dfuutil\bin\dfu-util.exe`
 - Server uses hardcoded path, should work automatically
 
 ---
@@ -121,7 +121,7 @@ upload_firmware("f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo
 The server is pre-configured for your environment:
 - **DFU command:** `:EDFU#` (OnStepX custom command)
 - **Serial baud:** 115200
-- **dfu-util path:** `c:\Users\marti\.platformio\packages\tool-dfuutil\bin\dfu-util.exe`
+- **dfu-util path:** `%USERPROFILE%\.platformio\packages\tool-dfuutil\bin\dfu-util.exe`
 - **Upload address:** `0x08000000` (STM32 flash start)
 - **Upload mode:** `:leave` (device auto-reboots after upload)
 - **Build output:** `.pio/build/nucleo_g0b1re/firmware.bin`

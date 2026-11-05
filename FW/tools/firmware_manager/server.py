@@ -70,6 +70,7 @@ Example (inside an MCP client session):
 import asyncio
 import logging
 import os
+import shutil
 import subprocess
 import time
 from typing import Optional
@@ -77,6 +78,12 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 import serial
 import serial.tools.list_ports
+
+# Tool locations: PATH first, then the PlatformIO install in the user home
+PIO_HOME = os.path.join(os.path.expanduser("~"), ".platformio")
+_EXE = ".exe" if os.name == "nt" else ""
+DFU_UTIL = shutil.which("dfu-util") or os.path.join(PIO_HOME, "packages", "tool-dfuutil", "bin", "dfu-util" + _EXE)
+PIO = shutil.which("pio") or os.path.join(PIO_HOME, "penv", "Scripts" if os.name == "nt" else "bin", "pio" + _EXE)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -117,7 +124,7 @@ def upload_firmware(firmware_path: str) -> str:
         firmware_path: Absolute path to the .bin firmware file.
     """
     cmd = [
-        r"c:\Users\marti\.platformio\packages\tool-dfuutil\bin\dfu-util.exe",
+        DFU_UTIL,
         "-a", "0",
         "-s", "0x08000000:leave",
         "-D", firmware_path
@@ -125,10 +132,13 @@ def upload_firmware(firmware_path: str) -> str:
 
     try:
         logger.info(f"Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return f"Upload successful:\n{result.stdout}"
-    except subprocess.CalledProcessError as e:
-        return f"Upload failed:\n{e.stdout}\n{e.stderr}"
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        output = result.stdout + result.stderr
+        # dfu-util exits non-zero with "get_status" on STM32G0 after a successful flash
+        # (device reboots before dfu-util can read the status — this is a known false positive)
+        if "File downloaded successfully" in output:
+            return f"Upload successful:\n{output}"
+        return f"Upload failed (exit {result.returncode}):\n{output}"
     except FileNotFoundError:
         return "Error: dfu-util not found. Please verify it is installed and in PATH."
 
@@ -159,17 +169,18 @@ def enter_dfu_and_upload(port: str, firmware_path: str, wait_seconds: int = 3) -
     # Step 3: Upload firmware
     logger.info(f"Starting firmware upload...")
     cmd = [
-        r"c:\Users\marti\.platformio\packages\tool-dfuutil\bin\dfu-util.exe",
+        DFU_UTIL,
         "-a", "0",
         "-s", "0x08000000:leave",
         "-D", firmware_path
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return f"Success! DFU command sent, waited {wait_seconds}s, upload completed:\n{result.stdout}"
-    except subprocess.CalledProcessError as e:
-        return f"Upload failed after DFU command:\n{e.stdout}\n{e.stderr}"
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        output = result.stdout + result.stderr
+        if "File downloaded successfully" in output:
+            return f"Success! DFU command sent, waited {wait_seconds}s, upload completed:\n{output}"
+        return f"Upload failed after DFU command (exit {result.returncode}):\n{output}"
     except FileNotFoundError:
         return "Error: dfu-util not found."
 
@@ -187,16 +198,17 @@ def build_firmware(
     if not os.path.isfile(os.path.join(project_dir, "platformio.ini")):
         return f"Error: platformio.ini not found in {project_dir}"
 
-    cmd = ["pio", "run", "-d", project_dir, "-e", environment]
+    pio = PIO
+    cmd = [pio, "run", "-d", project_dir, "-e", environment]
 
     try:
         logger.info(f"Running: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return f"Build successful (environment: {environment}):\n{result.stdout}"
-    except subprocess.CalledProcessError as e:
-        return f"Build failed:\n{e.stdout}\n{e.stderr}"
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return f"Build successful (environment: {environment}):\n{result.stdout}"
+        return f"Build failed:\n{result.stdout}\n{result.stderr}"
     except FileNotFoundError:
-        return "Error: pio (PlatformIO CLI) not found. Please verify it is installed and in PATH."
+        return f"Error: pio not found at {pio}"
 
 @mcp.tool()
 def serial_read(
