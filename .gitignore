@@ -26,6 +26,8 @@ HW/**/#auto_saved_files#
 HW/**/~*.lck
 HW/**/~*.sch.lck
 HW/.history/
+HW/**/*_bck.*
+HW/**/.history_trim/
 
 # Claude Code local settings
 .claude/settings.local.json

@@ -22,7 +22,7 @@ Port the OnStepX telescope controller firmware to the STM32G0B1CBT6 microcontrol
 - **LEDs:** PB12 (status, active LOW), PB4 (activity, active LOW)
 - **Build Tool:** PlatformIO with STMicroelectronics platform
 - **PlatformIO Board:** btt_ebb42_v1_1 (same STM32G0B1 chip, proper STM32duino support)
-- **Reference project:** C:\Users\marti\Documents\PlatformIO\Projects\251205-184509-genericSTM32F103CB (FilterWheel STM32G0B1 with proven DFU bootloader jump)
+- **Reference project:** %USERPROFILE%\Documents\PlatformIO\Projects\251205-184509-genericSTM32F103CB (FilterWheel STM32G0B1 with proven DFU bootloader jump)
 
 ## Axis Configuration (OnStepX Convention - HARDCODED, cannot be swapped)
 - **AXIS1/AXIS2 (Mount):** OFF - not used on this board
@@ -135,11 +135,11 @@ Files created/modified:
 ### PlatformIO CLI
 PlatformIO CLI is not on PATH. Use the full path:
 ```
-C:\Users\marti\.platformio\penv\Scripts\pio.exe
+%USERPROFILE%\.platformio\penv\Scripts\pio.exe
 ```
 Example build command:
 ```
-"C:\Users\marti\.platformio\penv\Scripts\pio.exe" run -e nucleo_g0b1re -d "f:/Projekty/AstroUniBoard/FW - FocuserRotator"
+"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run -e nucleo_g0b1re -d "f:/Projekty/AstroUniBoard/FW - FocuserRotator"
 ```
 
 ## Build & Upload Instructions
@@ -208,6 +208,6 @@ Available MCP tools:
 ## References
 - STM32G0B1CBT6 Datasheet (128KB Flash, 144KB SRAM, 48-pin LQFP)
 - Existing implementations: STM32F407.h, STM32F446.h
-- FilterWheel STM32G0B1 project (DFU bootloader reference): `C:\Users\marti\Documents\PlatformIO\Projects\251205-184509-genericSTM32F103CB`
+- FilterWheel STM32G0B1 project (DFU bootloader reference): `%USERPROFILE%\Documents\PlatformIO\Projects\251205-184509-genericSTM32F103CB`
 - OnStep documentation: https://groups.io/g/onstep/wiki/home
 - Pin assignment: `.claude/PINOUT.md`
