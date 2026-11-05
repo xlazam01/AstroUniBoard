@@ -143,7 +143,7 @@ CommandError Rotator::imuHome() {
     delay(20);
   }
   if (count == 0) return CE_SLEW_ERR_UNSPECIFIED;
-  float currentAngle = atan2f(sumX / count, sumZ / count) * (180.0f / M_PI);
+  float currentAngle = atan2f(-(sumX / count), -(sumZ / count)) * (180.0f / M_PI);
 
   // Sync axis3 to the true physical position before computing the goto target.
   // NV-stored position may be stale after a reflash or manual rotation.
