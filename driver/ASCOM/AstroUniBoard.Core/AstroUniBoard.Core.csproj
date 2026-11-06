@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>AstroUniBoard.Core</AssemblyName>
+    <RootNamespace>AstroUniBoard.Core</RootNamespace>
+    <Platforms>AnyCPU</Platforms>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.1.0</Version>
+    <Description>Transport, protocol and device logic for the AstroUniBoard focuser/rotator (no ASCOM dependency). Copied and adapted from OpenWheel.Core.</Description>
+  </PropertyGroup>
+</Project>
