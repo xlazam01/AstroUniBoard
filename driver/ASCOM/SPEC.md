@@ -167,6 +167,11 @@ One dialog for all three devices (the same one from NINA's setup button of any o
   **Write to board** sends only the changed values, then `:23#`.
 - **This PC**: rotator sky offset; temperature-compensation coefficient and threshold.
 - Halt all and Clear error buttons.
+- **IMU calibration / debug app...** starts `AstroUniBoard.DebugApp.exe --connect --tab imu` from the
+  server exe's folder, where the installer (#46) puts it, and does not wait for it. The app
+  connects back through this LocalServer as one more client, so the IMU zero calibration can be
+  reached from N.I.N.A.'s setup button while N.I.N.A. holds the driver. Calls from other clients are
+  served while the modal dialog is open. If the exe is missing, a message says where it is expected.
 
 ## 7. Settings (ASCOM profile)
 

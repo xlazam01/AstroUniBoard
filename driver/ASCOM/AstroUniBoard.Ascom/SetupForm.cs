@@ -48,6 +48,7 @@ namespace AstroUniBoard.Ascom
 
         private readonly Button btnHaltAll = new Button { Text = "Halt all" };
         private readonly Button btnClear = new Button { Text = "Clear error" };
+        private readonly Button btnDebugApp = new Button { Text = "IMU calibration / debug app..." };
         private readonly Button btnOk = new Button { Text = "OK", DialogResult = DialogResult.OK };
         private readonly Button btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel };
         private readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 400 };
@@ -137,9 +138,12 @@ namespace AstroUniBoard.Ascom
 
             btnHaltAll.SetBounds(12, y, 90, 28);
             btnClear.SetBounds(108, y, 90, 28);
+            btnDebugApp.SetBounds(204, y, 200, 28);
+            new ToolTip().SetToolTip(btnDebugApp, "Opens the AstroUniBoard control & debug app on its IMU tab (IMU zero calibration, IMU home).\r\n" +
+                                                  "It connects through this driver as one more client, so it works while N.I.N.A. is connected.");
             btnOk.SetBounds(W - 170, y, 75, 28);
             btnCancel.SetBounds(W - 87, y, 75, 28);
-            Controls.AddRange(new Control[] { btnHaltAll, btnClear, btnOk, btnCancel });
+            Controls.AddRange(new Control[] { btnHaltAll, btnClear, btnDebugApp, btnOk, btnCancel });
             ClientSize = new Size(W, y + 40);
 
             btnIdentify.Click += OnIdentify;
@@ -147,6 +151,7 @@ namespace AstroUniBoard.Ascom
             btnRotWrite.Click += OnRotatorWrite;
             btnHaltAll.Click += (s, e) => Run(Server.Controller.HaltAll(4000));
             btnClear.Click += (s, e) => Run(Server.Controller.ClearError(4000));
+            btnDebugApp.Click += OnDebugApp;
             btnOk.Click += OnOk;
             timer.Tick += (s, e) => RefreshStatus();
 
@@ -396,6 +401,31 @@ namespace AstroUniBoard.Ascom
         private static KeyValuePair<string, Func<CommandResult>> Change(string name, Func<CommandResult> f)
         {
             return new KeyValuePair<string, Func<CommandResult>>(name, f);
+        }
+
+        /// <summary>
+        /// Starts the control &amp; debug app (installed next to this exe by #46) on its IMU tab. It connects
+        /// back through this LocalServer as one more client, so it works while N.I.N.A. holds the driver.
+        /// </summary>
+        private void OnDebugApp(object sender, EventArgs e)
+        {
+            string exe = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.ExecutablePath), "AstroUniBoard.DebugApp.exe");
+            if (!System.IO.File.Exists(exe))
+            {
+                MessageBox.Show(this, "The AstroUniBoard control & debug app is not installed next to the driver:\r\n" + exe +
+                                "\r\n\r\nThe installer puts it there. For a development build copy driver\\ASCOM\\AstroUniBoard.DebugApp\\bin\\<configuration>\\net48\\ into that folder.",
+                                "AstroUniBoard", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, "--connect --tab imu") { UseShellExecute = true });
+                Server.Log("setup dialog: started the debug app on the IMU tab");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Cannot start the debug app: " + ex.Message, "AstroUniBoard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void Run(CommandResult r)
