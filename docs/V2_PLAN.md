@@ -164,7 +164,7 @@ NINA's built-in AF knows one camera and one focuser, so it can't focus the guide
 | M5 | FW env + temp comp | SHT31, dew point, temp-comp coefficient |
 | **G1** | **pid.codes gate** | repo public with: license files, schematic PDF + KiCad, working fw (M2–M4), PROTOCOL.md, README with photos → open PR at pidcodes **[Q07]** |
 | M6 | Core lib + simulator | detection, transport, fake-device tests green |
-| M7 | ASCOM | Focuser + Rotator via LocalServer, control/debug dialog, ConformU 0 errors, installer, tested in NINA on astrobox |
+| M7 | ASCOM | Focuser + Rotator via LocalServer, control/debug dialog, ConformU 0 errors, installer, tested in NINA on the observatory PC |
 | M8 | INDI | driver + sim + tests, tested in KStars/Ekos |
 | M9 | NINA plugin | guide-camera AF with the AstroUniBoard focuser + filter-offset compensation working on Triton with OAG |
 | M10 | Release 2.0 | final PID in firmware, docs, release binaries, v1 → v2 migration note |
