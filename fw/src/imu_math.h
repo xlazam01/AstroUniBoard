@@ -1,0 +1,31 @@
+// Pure IMU zero-calibration math (#32, Q19 / Q19b): no Arduino, no I/O, host-testable (test/test_imu_math).
+// Vectors are accelerometer readings in mg, chip axes. Single-precision float; never call from an ISR.
+// Owner: session C. Used only by imu_mpu6000.cpp.
+#pragma once
+#include <stdint.h>
+#include "error_codes.h"
+#include "nv_store.h"
+
+#define IMU_MATH_INVALID  (-99999)
+
+struct ImuV3 { float x, y, z; };
+
+// Limits (also documented in docs/PROTOCOL.md §4.3)
+#define IMU_CAL_G_MIN_MG      700.0f    // a capture must look like 1 g at rest
+#define IMU_CAL_G_MAX_MG      1300.0f
+#define IMU_CAL_COS_MAX       0.3420f   // |cos(g0, g90)| <= cos 70 deg: the two captures are 70..110 deg apart
+#define IMU_CAL_COS_VERTICAL  0.8830f   // cos(g0, g90) >= cos^2 20 deg: optical axis within ~20 deg of vertical
+#define IMU_VERTICAL_COS      0.9397f   // |cos(n, g)| >= cos 20 deg: roll undefined
+
+// n = g0 x g90 (normalised), checks as above. FW_OK fills `out` (valid = 1, g0 in mg, n * 10000);
+// FW_ERR_IMU_VERTICAL or FW_ERR_CALIB_FAILED leave `out` untouched.
+FwError imuMathCalibrate(const ImuV3& g0, const ImuV3& g90, ImuCalibration& out);
+
+// Plausibility of a stored record (valid flag, |n| about 10000, |g0| about 1 g).
+bool imuMathCalValid(const ImuCalibration& c);
+
+// Signed roll in cdeg (-18000..18000) from g0 to g about n; IMU_MATH_INVALID when near vertical.
+int32_t imuMathRollCdeg(const ImuCalibration& c, const ImuV3& g);
+// Angle between n and the measured gravity, cdeg 0..18000 (0 / 18000 = optical axis vertical).
+int32_t imuMathTiltCdeg(const ImuCalibration& c, const ImuV3& g);
+bool    imuMathNearVertical(const ImuCalibration& c, const ImuV3& g);
