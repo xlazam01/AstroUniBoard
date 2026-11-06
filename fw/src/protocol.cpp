@@ -1,19 +1,79 @@
 #include <Arduino.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "bootloader.h"
 #include "config.h"
-#include "diag.h"
-#include "error_codes.h"
-#include "env_sht31.h"
 #include "protocol.h"
+#include "settings.h"
 
 // One write per reply, so the host never sees half a reply.
-static void reply(const char* s, int n) { PROTOCOL_SERIAL.write((const uint8_t*)s, (size_t)n); }
+void protoReply(const char* s, int n) {
+    if (n <= 0) return;
+    PROTOCOL_SERIAL.write((const uint8_t*)s, (size_t)n);
+}
 
-static void replyError(FwError code) {
+void protoOk() { protoReply("OK#", 3); }
+
+void protoError(FwError code) {
     char out[12];
-    reply(out, snprintf(out, sizeof(out), "ERR,%d#", (int)code));
+    protoReply(out, snprintf(out, sizeof(out), "ERR,%d#", (int)code));
+}
+
+void protoInt(int32_t v) {
+    char out[16];
+    protoReply(out, snprintf(out, sizeof(out), "%ld#", (long)v));
+}
+
+void protoPrintf(const char* fmt, ...) {
+    char out[96];
+    va_list ap;
+    va_start(ap, fmt);
+    int n = vsnprintf(out, sizeof(out), fmt, ap);
+    va_end(ap);
+    if (n >= (int)sizeof(out)) n = sizeof(out) - 1;
+    protoReply(out, n);
+}
+
+bool protoSplit(char* p, ProtoArgs& a) {
+    a.n = 0;
+    if (*p == ' ' || *p == ',') p++;
+    if (*p == '\0') return true;
+    for (;;) {
+        if (a.n >= PROTO_MAX_ARGS) return false;
+        a.v[a.n++] = p;
+        char* c = strchr(p, ',');
+        if (!c) break;
+        *c = '\0';
+        p = c + 1;
+    }
+    for (uint8_t i = 0; i < a.n; i++)
+        if (a.v[i][0] == '\0') return false;
+    return true;
+}
+
+bool protoInt32(const char* s, int32_t& out) {
+    const char* p = s;
+    bool neg = false;
+    if (*p == '+' || *p == '-') { neg = (*p == '-'); p++; }
+    if (*p == '\0') return false;
+    int64_t v = 0;
+    for (; *p; p++) {
+        if (*p < '0' || *p > '9') return false;
+        v = v * 10 + (*p - '0');
+        if (v > 2147483648LL) return false;
+    }
+    if (neg) v = -v;
+    if (v > INT32_MAX || v < INT32_MIN) return false;
+    out = (int32_t)v;
+    return true;
+}
+
+int protoAxis(const char* s) {
+    if (s[0] == '\0' || s[1] != '\0') return -1;
+    if (s[0] == 'F' || s[0] == 'f') return AXIS_FOC;
+    if (s[0] == 'R' || s[0] == 'r') return AXIS_ROT;
+    return -1;
 }
 
 void Protocol::process() {
@@ -26,11 +86,11 @@ void Protocol::process() {
         } else if (c == '#') {
             if (!inCommand) continue;
             buf[len] = '\0';
-            if (overflow) replyError(FW_ERR_BAD_FORMAT);
+            if (overflow) protoError(FW_ERR_BAD_FORMAT);
             else handleCommand();
             inCommand = false;
         } else if (inCommand) {
-            if (len < sizeof(buf) - 1) buf[len++] = c;
+            if (len < PROTO_MAX_LINE) buf[len++] = c;
             else overflow = true;
         }
         // bytes outside ":...#" are noise and are ignored without a reply
@@ -38,50 +98,13 @@ void Protocol::process() {
 }
 
 void Protocol::handleCommand() {
-    if (len < 2 || !isDigit(buf[0]) || !isDigit(buf[1])) { replyError(FW_ERR_BAD_FORMAT); return; }
-    const int cmd = (buf[0] - '0') * 10 + (buf[1] - '0');
-    const char* params = &buf[2];
+    if (len < 2 || !isDigit(buf[0]) || !isDigit(buf[1])) { protoError(FW_ERR_BAD_FORMAT); return; }
+    const uint8_t cmd = (uint8_t)((buf[0] - '0') * 10 + (buf[1] - '0'));
+    char* params = &buf[2];
 
-    switch (cmd) {
-        case 22:  // reboot
-        case 31:  // reboot to the USB DFU bootloader (magic word + reset)
-            reply("OK#", 3);
-            PROTOCOL_SERIAL.flush();
-            delay(50);   // let the USB host fetch the reply before the device drops off the bus
-            if (cmd == 31) rebootToDfu();
-            rebootNormal();
-            break;
-
-        case 25:  // ping
-            reply("OK#", 3);
-            break;
-
-        case 90: {  // TEMPORARY (until the env block 90-99 is specified, issue #10): both SHT31 sensors
-                    // "W,<st>,<t 0.1C>,<rh 0.1%>,<dew 0.1C>,<st>,<t>,<rh>,<dew>,<power cycles>#"
-                    // first group on-board (0x45), second external J9 (0x44); st = ShtStatus,
-                    // values are the last good reading and valid only while st == 0.
-            if (params[0] != '\0') { replyError(FW_ERR_BAD_PARAM); break; }
-            const ShtReading& a = envReading(ENV_ONBOARD);
-            const ShtReading& b = envReading(ENV_EXTERNAL);
-            char out[64];
-            reply(out, snprintf(out, sizeof(out), "W,%u,%d,%u,%d,%u,%d,%u,%d,%u#",
-                                (unsigned)a.status, (int)a.tDeciC, (unsigned)a.rhDeci, (int)a.dewDeciC,
-                                (unsigned)b.status, (int)b.tDeciC, (unsigned)b.rhDeci, (int)b.dewDeciC,
-                                (unsigned)envPowerCycles()));
-            break;
-        }
-
-        case 99: {  // TEMPORARY bring-up diagnostics:
-                    // "D,<reset flags RCC_CSR>>24 hex>,<last marker>,<safe mode>,<last note hex>#"
-            char out[40];
-            reply(out, snprintf(out, sizeof(out), "D,%02lX,%u,%u,%lX#", (unsigned long)diagResetFlags(),
-                                (unsigned)diagLastMark(), diagWatchdogReset() ? 1u : 0u,
-                                (unsigned long)diagLastNote()));
-            break;
-        }
-
-        default:
-            replyError(FW_ERR_UNKNOWN_CMD);
-            break;
-    }
+    if (cmd >= 90)      protocolEnv(cmd, params);
+    else if (cmd >= 70) protocolRotator(cmd, params);
+    else if (cmd >= 50) protocolFocuser(cmd, params);
+    else if (cmd >= 20) protocolCommon(cmd, params);
+    else                protoError(FW_ERR_UNKNOWN_CMD);
 }
