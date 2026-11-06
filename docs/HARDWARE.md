@@ -1,5 +1,25 @@
 # AstroUniBoard — Hardware Reference
 
+## Board revisions
+
+| Rev | Status | Git |
+|-----|--------|-----|
+| 1.x | Prototype boards (OnStepX firmware) | `f313306` |
+| **2.0** | **Frozen 2026-11-06 for bring-up testing.** Change only through a new revision. | tag `hw-rev2.0` |
+
+Rev 2.0 is pin-compatible with rev 1 for firmware: every MCU pin has the same function.
+Differences the firmware can see:
+
+| Item | Rev 1 | Rev 2.0 |
+|------|-------|---------|
+| On-board SHT31 (U8) address | 0x44 (ADDR = GND) | **0x45** (ADDR = PB9 supply) |
+| External SHT31 on J9 (I2C) | not possible (address clash) | **0x44** |
+| MPU-6000 /CS | floating | tied to +3.3V (I2C mode) |
+
+Other rev 2.0 changes (no firmware impact): schematic reorganised, +5V3 buck 5.3 V, USBLC6 ESD
+and 56k Rp on the downstream USB-C, JP5 (+12V motors) bridged by default, TMC2209 SPREAD/STDBY to GND,
+EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load caps DNP, track clean-up.
+
 ## MCU
 
 | Property | Value |
