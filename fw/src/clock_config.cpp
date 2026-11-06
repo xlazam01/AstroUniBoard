@@ -4,6 +4,7 @@
 // If the crystal does not start, fall back to HSI and trim HSI48 from the USB SOF packets (CRS).
 #include <Arduino.h>
 #include "clock_config.h"
+#include "bootloader.h"
 
 static bool hseRunning = false;
 
@@ -72,6 +73,7 @@ static void clockFromHSI() {
 }
 
 extern "C" void SystemClock_Config(void) {
+    dfuCheckAtBoot();   // :31# magic word -> system bootloader, before any clock or USB setup
     HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
     hseRunning = clockFromHSE();
     if (!hseRunning) clockFromHSI();

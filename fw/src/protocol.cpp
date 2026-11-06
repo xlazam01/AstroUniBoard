@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <stdio.h>
 
+#include "bootloader.h"
 #include "config.h"
+#include "diag.h"
 #include "error_codes.h"
 #include "env_sht31.h"
 #include "protocol.h"
@@ -41,6 +43,15 @@ void Protocol::handleCommand() {
     const char* params = &buf[2];
 
     switch (cmd) {
+        case 22:  // reboot
+        case 31:  // reboot to the USB DFU bootloader (magic word + reset)
+            reply("OK#", 3);
+            PROTOCOL_SERIAL.flush();
+            delay(50);   // let the USB host fetch the reply before the device drops off the bus
+            if (cmd == 31) rebootToDfu();
+            rebootNormal();
+            break;
+
         case 25:  // ping
             reply("OK#", 3);
             break;
@@ -57,6 +68,15 @@ void Protocol::handleCommand() {
                                 (unsigned)a.status, (int)a.tDeciC, (unsigned)a.rhDeci, (int)a.dewDeciC,
                                 (unsigned)b.status, (int)b.tDeciC, (unsigned)b.rhDeci, (int)b.dewDeciC,
                                 (unsigned)envPowerCycles()));
+            break;
+        }
+
+        case 99: {  // TEMPORARY bring-up diagnostics:
+                    // "D,<reset flags RCC_CSR>>24 hex>,<last marker>,<safe mode>,<last note hex>#"
+            char out[40];
+            reply(out, snprintf(out, sizeof(out), "D,%02lX,%u,%u,%lX#", (unsigned long)diagResetFlags(),
+                                (unsigned)diagLastMark(), diagWatchdogReset() ? 1u : 0u,
+                                (unsigned long)diagLastNote()));
             break;
         }
 

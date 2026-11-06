@@ -19,3 +19,4 @@
 #define PIN_FOC_EN           PB0
 
 #define PIN_STATUS_LED       PB12   // active LOW
+#define PIN_ACT_LED          PB4    // active LOW

@@ -4,24 +4,26 @@
 #include <math.h>
 
 #include "config.h"
+#include "diag.h"
 #include "env_sht31.h"
 
 static const uint32_t ENV_PERIOD_MS     = 2000;  // measurement interval
 static const uint32_t MEAS_WAIT_MS      = 20;    // high repeatability: 15.5 ms max
 static const uint32_t POWER_OFF_MS      = 100;   // supply off time when recovering the sensor
 static const uint32_t POWER_UP_MS       = 2;     // datasheet: 1 ms max to idle after VDD rises
-static const uint8_t  FAILS_BEFORE_CYCLE = 3;    // consecutive on-board failures before a power cycle
+static const uint8_t  FAILS_BEFORE_CYCLE = 3;    // consecutive failures of a seen sensor before a power cycle
 
 static const uint8_t ADDRS[ENV_SENSOR_COUNT] = { SHT31_ADDR_ONBOARD, SHT31_ADDR_EXTERNAL };
 
 enum EnvState : uint8_t { ST_POWER_UP, ST_IDLE, ST_MEASURING, ST_POWER_OFF };
 
-static ShtReading readings[ENV_SENSOR_COUNT];
+static ShtReading readings[ENV_SENSOR_COUNT] = { { SHT_NO_DATA, 0, 0, 0 }, { SHT_NO_DATA, 0, 0, 0 } };
 static bool       triggered[ENV_SENSOR_COUNT];
 static EnvState   state;
 static uint32_t   stateSince;
 static uint32_t   lastStart;
-static uint8_t    onboardFails;
+static bool       seen[ENV_SENSOR_COUNT];    // answered at least once since boot
+static uint8_t    fails[ENV_SENSOR_COUNT];   // consecutive failures after it was seen
 static uint16_t   powerCycles;
 
 static void enter(EnvState s) { state = s; stateSince = millis(); }
@@ -39,7 +41,15 @@ static bool startMeasurement(uint8_t addr) {
     Wire.beginTransmission(addr);
     Wire.write(0x24);   // single shot, high repeatability, clock stretching disabled
     Wire.write(0x00);
-    return Wire.endTransmission() == 0;
+    const uint8_t err = Wire.endTransmission();
+    if (err == 0) return true;
+    // STM32duino Wire (core 2.12, G0, interrupt mode): after a NACK from an absent device the next transfer
+    // to a present one never completes and starves the main loop (found on the board 2026-11-06,
+    // on-board U8 not fitted). Restarting the peripheral after every failed transfer fixes it.
+    diagNoteOr((uint32_t)err << (addr == SHT31_ADDR_ONBOARD ? 16 : 20));
+    Wire.end();
+    Wire.begin();
+    return false;
 }
 
 static void readMeasurement(EnvSensor s) {
@@ -79,22 +89,28 @@ void envUpdate() {
             if (now - lastStart < ENV_PERIOD_MS) break;
             lastStart = now;
             for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+                diagMark((DiagMark)(DIAG_ENV_START0 + i));
                 triggered[i] = startMeasurement(ADDRS[i]);
                 if (!triggered[i]) readings[i].status = SHT_NO_ACK;
             }
             enter(ST_MEASURING);
             break;
 
-        case ST_MEASURING:
+        case ST_MEASURING: {
             if (now - stateSince < MEAS_WAIT_MS) break;
             for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+                diagMark((DiagMark)(DIAG_ENV_READ0 + i));
                 if (triggered[i]) readMeasurement((EnvSensor)i);
             }
-            // The on-board sensor is always fitted, so repeated failures mean it hung: cycle its supply.
-            // The external sensor is optional, its absence is not a fault.
-            onboardFails = (readings[ENV_ONBOARD].status == SHT_OK) ? 0 : (uint8_t)(onboardFails + 1);
-            if (onboardFails >= FAILS_BEFORE_CYCLE) {
-                onboardFails = 0;
+            // Either sensor may be absent (on-board U8 not fitted, nothing on J9). A sensor that answered
+            // before and now fails repeatedly has hung: cycle the shared supply.
+            bool hung = false;
+            for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+                if (readings[i].status == SHT_OK) { seen[i] = true; fails[i] = 0; }
+                else if (seen[i] && ++fails[i] >= FAILS_BEFORE_CYCLE) hung = true;
+            }
+            if (hung) {
+                for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) fails[i] = 0;
                 powerCycles++;
                 digitalWrite(PIN_SHT_PWR, LOW);
                 enter(ST_POWER_OFF);
@@ -102,6 +118,7 @@ void envUpdate() {
                 enter(ST_IDLE);
             }
             break;
+        }
 
         case ST_POWER_OFF:
             if (now - stateSince < POWER_OFF_MS) break;
