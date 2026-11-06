@@ -1,0 +1,163 @@
+ConformU 4.5.2 conformance run, driver ASCOM.AstroUniBoard.ObservingConditions 0.1, board REV2 FW2.0.0 (protocol 2) on COM9, 2026-11-06
+Command: conformu conformance ASCOM.AstroUniBoard.ObservingConditions
+Result: no errors, warnings or issues; all members within target response times.
+
+
+
+15:00:05.967 ASCOM Universal Device Conformance Checker Version 4.5.2.56139, Build time: so 17 října 2026 12:11:34          
+15:00:05.974                                              
+15:00:05.975 Operating system is Windows 11 (26H2), Processor is Intel/AMD 64bit, Application is 64bit.          
+15:00:05.975                                              
+15:00:05.976 COM Driver                          INFO     Checking ProgID: ASCOM.AstroUniBoard.ObservingConditions
+15:00:05.978 COM Driver                          OK       This driver is compatible with the currently running 64-bit Conform Universal application.
+15:00:05.978                                              
+15:00:05.980 CreateDevice                        INFO     Creating NATIVE COM device: ASCOM.AstroUniBoard.ObservingConditions
+15:00:06.179 CreateDevice                        INFO     Successfully created driver
+15:00:07.268 CreateDevice                        OK       Found a valid interface version: 2
+15:00:07.268 CreateDevice                        OK       Driver instance created successfully
+15:00:07.268                                              
+15:00:07.268 Connect to device                            
+15:00:07.655 Connected                           OK       Connected to device successfully using Connected = True
+15:00:08.169 Connected                           OK       Disconnected from device successfully using Connected = False
+15:00:08.687 Connect                             OK       Connected to device successfully using Connect()
+15:00:08.687                                              
+15:00:08.695 Common Driver Methods                        
+15:00:08.695 InterfaceVersion                    OK       2
+15:00:08.697 Connected                           OK       True
+15:00:08.707 Description                         OK       AstroUniBoard environment sensor (SHT31: temperature, humidity, dew point)
+15:00:08.711 DriverInfo                          OK       AstroUniBoard ASCOM ObservingConditions driver 0.1 (LocalServer, protocol 2). Open source, https://github.com/xlazam01/AstroUniBoard
+15:00:08.713 DriverVersion                       OK       0.1
+15:00:08.715 Name                                OK       AstroUniBoard ObservingConditions (FW2.0.0)
+15:00:08.715                                              
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:Raw
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:Snapshot
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:Log
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:HaltAll
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:ClearError
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:SaveSettings
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:ImuHome
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:ImuCalibrate
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:Reboot
+15:00:08.798 SupportedActions                    OK       Found action: AstroUniBoard:EnterDfu
+15:00:08.798                                              
+15:00:08.798 Action                              INFO     Conform cannot test the Action method
+15:00:08.798                                              
+15:00:08.840 DeviceState                         OK       Received 4 operational state properties.
+15:00:08.841 DeviceState                         OK         DewPoint = 12
+15:00:08.841 DeviceState                         OK         Humidity = 41,1
+15:00:08.841 DeviceState                         OK         Temperature = 26,3
+15:00:08.841 DeviceState                         OK         TimeStamp = 06.11.2026 14:00:08
+15:00:08.847 DeviceState                         INFO     Operational property CloudCover was not included in the DeviceState response.
+15:00:08.847 DeviceState                         INFO     Operational property Pressure was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property RainRate was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property SkyBrightness was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property SkyQuality was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property SkyTemperature was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property StarFWHM was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property WindDirection was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property WindGust was not included in the DeviceState response.
+15:00:08.848 DeviceState                         INFO     Operational property WindSpeed was not included in the DeviceState response.
+15:00:08.848                                              
+15:00:08.848 Properties                                   
+15:00:08.861 AveragePeriod                       OK       0
+15:00:08.887 AveragePeriod Write                 OK       Invalid Value exception generated as expected on set average period < -1.0
+15:00:08.887 AveragePeriod Write                 OK       Successfully set average period to 0.0
+15:00:08.888 AveragePeriod Write                 OK       Invalid value exception thrown when average period is set to 5.0, which is permitted by the specification
+15:00:08.888 AveragePeriod Write                 OK       Successfully restored original average period: 0
+15:00:08.897 CloudCover                          OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.949 DewPoint                            OK       12
+15:00:08.951 Humidity                            OK       41,1
+15:00:08.951 DewPoint & Humidity                 OK       Dew point and humidity are both implemented per the interface specification
+15:00:08.953 Pressure                            OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.964 RainRate                            OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.966 SkyBrightness                       OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.969 SkyQuality                          OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.971 StarFWHM                            OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.973 SkyTemperature                      OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.975 Temperature                         OK       26,3
+15:00:08.977 WindDirection                       OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.980 WindGust                            OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.982 WindSpeed                           OK       Optional member returned a PropertyNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.982                                              
+15:00:08.982 Methods                                      
+15:00:08.994 TimeSinceLastUpdateLatest           OK       0,5120264999999999
+15:00:08.996 CloudCover                          OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.996 TimeSinceLastUpdateDewPoint         OK       0,5140274
+15:00:08.997 TimeSinceLastUpdateHumidity         OK       0,5140274
+15:00:08.997 DewPoint & Humidity                 OK       Dew point and humidity are both implemented per the interface specification
+15:00:08.997 Pressure                            OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.998 RainRate                            OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.998 SkyBrightness                       OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.999 SkyQuality                          OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:08.999 StarFWHM                            OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.000 SkyTemperature                      OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.000 TimeSinceLastUpdateTemperature      OK       0,5180271
+15:00:09.001 WindDirection                       OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.001 WindGust                            OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.002 WindSpeed                           OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.004 Refresh                             OK       Refreshed OK
+15:00:09.009 SensorDescriptionCloudCover         OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.009 SensorDescriptionDewPoint           OK       SHT31 external (J9) sensor: DewPoint
+15:00:09.010 SensorDescriptionHumidity           OK       SHT31 external (J9) sensor: Humidity
+15:00:09.010 DewPoint & Humidity                 OK       Dew point and humidity are both implemented per the interface specification
+15:00:09.010 SensorDescriptionPressure           OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.011 SensorDescriptionRainRate           OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.011 SensorDescriptionSkyBrightness      OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.012 SensorDescriptionSkyQuality         OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.013 SensorDescriptionStarFwhm           OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.013 SensorDescriptionSkyTemperature     OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.014 SensorDescriptionTemperature        OK       SHT31 external (J9) sensor: Temperature
+15:00:09.014 SensorDescriptionWindDirection      OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.015 SensorDescriptionWindGust           OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.015 SensorDescriptionWindSpeed          OK       Optional member returned a MethodNotImplementedException (COM Error: 0x80040400) error.
+15:00:09.015 Consistency - CloudCover            OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.015 Consistency - DewPoint              OK       Sensor value, description and time since last update are all implemented as required by the specification
+15:00:09.015 Consistency - Humidity              OK       Sensor value, description and time since last update are all implemented as required by the specification
+15:00:09.016 Consistency - Pressure              OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - RainRate              OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - SkyBrightness         OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - SkyQuality            OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - SkyTemperature        OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - StarFWHM              OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - Temperature           OK       Sensor value, description and time since last update are all implemented as required by the specification
+15:00:09.016 Consistency - WindDirection         OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - WindGust              OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016 Consistency - WindSpeed             OK       Sensor value, description and time since last update are all not implemented as required by the specification
+15:00:09.016                                              
+15:00:09.016 Disconnect from device                       
+15:00:09.020 Disconnect                          OK       Disconnected from device successfully using Disconnect()
+15:00:09.020                                              
+15:00:09.020 Conformance test has finished                
+15:00:09.020                                              
+15:00:09.020 Congratulations, no errors, warnings or issues found: your driver passes ASCOM validation!!          
+
+15:00:09.021 Timing Summary                               See Help for further information.
+15:00:09.021 Timing Summary                               FAST target response time: 0,1 seconds, (configuration and state reporting members).
+15:00:09.021 Timing Summary                               STANDARD target response time: 1,0 second, (property write and asynchronous initiators).
+15:00:09.021 Timing Summary                               EXTENDED target response time: 600,0 seconds, (synchronous methods, ImageArray and ImageArrayVariant).
+15:00:09.021 Timing Summary                               Conform is configured to report both good and bad timing outcomes.
+15:00:09.021                                              
+15:00:09.021 Connect                                      At 15:00:08.178 Connect                           0,008 seconds. ✓ (STANDARD)
+15:00:09.021 InterfaceVersion                             At 15:00:08.695 InterfaceVersion                  0,000 seconds. ✓ (FAST)
+15:00:09.021 Connected                                    At 15:00:08.696 Connected                         0,000 seconds. ✓ (FAST)
+15:00:09.021 Description                                  At 15:00:08.707 Description                       0,009 seconds. ✓ (FAST)
+15:00:09.021 DriverInfo                                   At 15:00:08.710 DriverInfo                        0,003 seconds. ✓ (FAST)
+15:00:09.021 DriverVersion                                At 15:00:08.713 DriverVersion                     0,002 seconds. ✓ (FAST)
+15:00:09.021 Name                                         At 15:00:08.715 Name                              0,002 seconds. ✓ (FAST)
+15:00:09.021 SupportedActions                             At 15:00:08.798 SupportedActions                  0,082 seconds. ✓ (FAST)
+15:00:09.021 DeviceState                                  At 15:00:08.840 DeviceState                       0,042 seconds. ✓ (FAST)
+15:00:09.021 AveragePeriod                                At 15:00:08.861 AveragePeriod                     0,009 seconds. ✓ (FAST)
+15:00:09.021 DewPoint                                     At 15:00:08.949 DewPoint                          0,003 seconds. ✓ (FAST)
+15:00:09.021 Humidity                                     At 15:00:08.951 Humidity                          0,002 seconds. ✓ (FAST)
+15:00:09.021 Temperature                                  At 15:00:08.975 Temperature                       0,002 seconds. ✓ (FAST)
+15:00:09.021 TimeSinceLastUpdateLatest                    At 15:00:08.994 TimeSinceLastUpdateLatest         0,011 seconds. ✓ (FAST)
+15:00:09.021 TimeSinceLastUpdateDewPoint                  At 15:00:08.996 TimeSinceLastUpdateDewPoint       0,000 seconds. ✓ (FAST)
+15:00:09.021 TimeSinceLastUpdateHumidity                  At 15:00:08.997 TimeSinceLastUpdateHumidity       0,000 seconds. ✓ (FAST)
+15:00:09.021 TimeSinceLastUpdateTemperature               At 15:00:09.000 TimeSinceLastUpdateTemperature    0,000 seconds. ✓ (FAST)
+15:00:09.021 SensorDescriptionDewPoint                    At 15:00:09.009 SensorDescriptionDewPoint         0,001 seconds. ✓ (FAST)
+15:00:09.021 SensorDescriptionHumidity                    At 15:00:09.010 SensorDescriptionHumidity         0,000 seconds. ✓ (FAST)
+15:00:09.021 SensorDescriptionTemperature                 At 15:00:09.014 SensorDescriptionTemperature      0,000 seconds. ✓ (FAST)
+15:00:09.021 Disconnect                                   At 15:00:09.018 Disconnect                        0,002 seconds. ✓ (STANDARD)
+15:00:09.021                                              
+15:00:09.021 Congratulations, all members returned within their target response times!!          
+
