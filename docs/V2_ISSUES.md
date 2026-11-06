@@ -26,7 +26,7 @@ This file is only an index; edit issues on GitHub. Plan: [V2_PLAN.md](V2_PLAN.md
 - [#15](https://github.com/xlazam01/AstroUniBoard/issues/15) USB descriptor: VID 0x1209 / test PID, product string, MCU-UID serial
 - [#16](https://github.com/xlazam01/AstroUniBoard/issues/16) Protocol parser + dispatch: ping, identify, status, error
 - [#17](https://github.com/xlazam01/AstroUniBoard/issues/17) NV store on 24AA64: records with magic + CRC, migration, wear policy
-- [#18](https://github.com/xlazam01/AstroUniBoard/issues/18) Housekeeping: VDDA, +5V, die temp, TMC temp (+12 V if Q24)
+- [#18](https://github.com/xlazam01/AstroUniBoard/issues/18) Housekeeping: VDDA, die temp, TMC temp (no voltage sense on rev 2.0)
 - [#19](https://github.com/xlazam01/AstroUniBoard/issues/19) DFU :31# via magic word in TAMP backup register + reset, and reboot :22#; update tools/firmware_manager
 - [#20](https://github.com/xlazam01/AstroUniBoard/issues/20) Status/activity LEDs
 - [#21](https://github.com/xlazam01/AstroUniBoard/issues/21) tools/hwtest pytest skeleton against the real board

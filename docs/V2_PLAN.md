@@ -78,7 +78,7 @@ Common block — **same numbers and replies as OpenWheel** so `*.Core` libraries
 | 32 | identify | `ASTROUNIBOARD,<model>,<fw>,<proto>,<serial>,<caps>#` (caps = bitmask focuser/rotator/imu/env) **[Q09]** |
 | 33 | status | `S,<state>,<foc_pos>,<foc_moving>,<rot_mech_cdeg>,<rot_moving>,<err>,<flags>#` — one atomic line |
 | 34 | read / clear sticky error | same |
-| 40 | housekeeping | same fields + VIN 12 V? **[Q24]** |
+| 40 | housekeeping | MCU-internal fields only (rev 2.0 has no voltage divider, Q24) |
 | 41/42 | StallGuard read / set | per axis param |
 | 43/44 | LED brightness | same |
 
@@ -229,44 +229,22 @@ See the interview — answers get recorded here as decisions.
 - Q39 Plugin lives in **its own repo**, submitted to the NINA plugin manifest; M9 issues go there.
 - Q12 **One axis moves at a time**; a second move while busy answers `ERR,8`.
 
-### Scope & repo (open)
-- Q07 pid.codes: what counts as "representative" for you — is a working focuser enough, or rotator too?
-- Q08 Simulator: firmware compiled for host (native PlatformIO env) vs. separate Python/C# fake?
+### Decided (2026-11-06)
+- Q09 Identify: **`ASTROUNIBOARD,<model>,<fw>,<proto>,<serial>,<caps>#`**, caps = bitmask focuser/rotator/imu/env.
+- Q11 Step generation: **hardware timer + STEP pin** (exact step count); VACTUAL rejected.
+- Q13 Run/hold current, microsteps, max speed, acceleration: **per axis at runtime, saved with `:23#`**;
+  compiled-in defaults.
+- Q14 Firmware has **absolute and relative** focuser moves; ASCOM reports `Absolute = true`.
+- Q18 Rotator sky offset: **host only** (driver profile); firmware knows the mechanical angle only.
+- Q23 USB hub CH334P: **passive**, no commands.
+- Q24 Rev 2.0 has **no voltage-sense divider** (no 12 V or +5 V net on an ADC pin), so `:40#` reports
+  MCU-internal values only (VDDA, die temp) + TMC temperature flags. VIN/+5V sense is a candidate for rev 2.1.
+- Q08 Host-test simulator: **Python fake device** on a virtual serial port (as OpenWheel), shared by
+  ASCOM, INDI and NINA tests.
 
-### Protocol
-- Q09 Identify string prefix and model names; capability bitmask in identify?
-- Q10 Command numbering: ranges per device (above) vs. axis selector (`:51,F,1000#`) vs. 3-digit numbers?
-- Q11 Step generation: HW timers + STEP pins (recommended) vs. TMC2209 VACTUAL?
-- Q12 Simultaneous focuser + rotator moves required?
-- Q13 Max step rate / microstepping / currents per axis; set at runtime over protocol and saved?
-- Q14 Focuser: absolute only, or also relative mode exposed to ASCOM?
-- Q15 Position persistence strategy and behaviour after power loss mid-move?
-- Q16 Focuser homing: none / StallGuard to end stop / limit switch on PA1?
-- Q17 Rotator: is 0…360 with forced unwind the final rule, or allow a configurable wrap range (e.g. ±200°)?
-- Q18 Rotator sky angle: host only (ASCOM `Sync` offset) or stored in the device?
-- Q19 MPU-6000: on the board that rotates with the camera, or fixed? What accuracy do you need (0.1°, 1°)?
-- Q20 Rotator homing at boot: automatic IMU home, or only on command?
-- Q21 Temperature compensation in firmware (autonomous) or host-driven (NINA/driver)?
-- Q22 Buttons PA14/PB6: manual focuser jog? anything else (rotator jog, LED off)?
-- Q23 USB hub (CH334P) on the board: any firmware control (port power switching) or passive?
-- Q24 Housekeeping: add 12 V input voltage and motor-driver supply sense?
-
-### ASCOM
-- Q25 Toolchain stays .NET Framework 4.8 + Platform 7 + Inno Setup like OpenWheel?
-- Q26 Device types: Focuser + Rotator only, or also ObservingConditions (temp/RH/dew point) and Switch (hub ports)?
+### Still open (none blocks the protocol spec)
+- Q25 ASCOM toolchain: .NET Framework 4.8 + Platform 7 + Inno Setup like OpenWheel?
 - Q27 One installer for all drivers, or separate?
-- Q28 Control & debug dialog: inside SetupDialog (OpenWheel style) or a standalone app usable while NINA is connected (needs LocalServer client mode)?
-- Q29 What must the debug dialog show — raw console, live plots (StallGuard/temp), log file export, firmware update (DFU) button?
-- Q30 Alpaca (cross-platform) now or later?
-
-### INDI
-- Q31 One INDI device with focuser+rotator(+weather) interfaces, or separate devices?
-- Q32 Target platforms: Raspberry Pi/StellarMate, x86 Linux; PPA/packaging or source build only?
-
-### NINA plugin
-(Q33–Q39 and Q43–Q46 decided, see above.)
-
-### Process
-- Q40 CI on GitHub Actions OK? Self-hosted hardware-in-the-loop runner (astrobox / Pi with a board)?
+- Q29 Debug app contents: raw console, live plots (StallGuard/temp), log export, DFU button?
+- Q32 INDI targets: Raspberry Pi/StellarMate, x86 Linux; packaging or source build only?
 - Q41 Release cadence and versioning (fw 2.x.y, drivers own versions)?
-- Q42 Should I create the GitHub milestones + issues now from `V2_ISSUES.md`?
