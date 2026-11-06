@@ -274,10 +274,9 @@ dfu-util -d 0483:df11 -a 0 -s 0x08000000:leave -D fw/.pio/build/rev2/firmware.bi
 ```
 
 On Windows the DFU bootloader needs the WinUSB driver once (Zadig). Recovery when the firmware does not start:
-hold **LEFT (BOOT)**, press **RST**, release LEFT. The board comes up as `STM32 BOOTLOADER`. On the STM32G0 this
-only works when the option bytes let the BOOT0 pin decide (`nBOOT_SEL = 0`). Check it once on every new board, and
-set it if needed, while the firmware still runs: an empty chip always starts the bootloader, but a programmed one
-with a firmware that does not start can otherwise only be recovered over SWD, and the board has no SWD pads. Details, V1 and the
+hold **LEFT (BOOT)**, press **RST**, release LEFT. The board comes up as `STM32 BOOTLOADER`. This works on a
+programmed board too (checked on the prototype), so no option-byte change is needed. The board has no SWD pads: this
+button sequence is the recovery path, and in the Triton enclosure the board has to come out to reach it. Details, V1 and the
 `firmware_manager` MCP tool: [docs/FIRMWARE.md](docs/FIRMWARE.md).
 
 ## Host software
