@@ -60,6 +60,8 @@ AstroUniBoard.DebugApp.exe [--port COM9] [--connect] [--loopback] [--screenshots
 against the loopback over Core's in-memory `FakeBoard` (with an OpenWheel on the shared PID that must
 be skipped). Hardware tests run only with `ASTROUNIBOARD_PORT=COM9` (or `auto`): small focuser and
 rotator moves on both paths; `ASTROUNIBOARD_DFU_IMAGE=<bin>` additionally flashes that image.
+`ASTROUNIBOARD_ASCOM=1` checks the installed LocalServer read-only (no moves) next to any other
+connected client, and that closing the app leaves that client connected.
 
 ```
 dotnet test driver/ASCOM/AstroUniBoard.sln
