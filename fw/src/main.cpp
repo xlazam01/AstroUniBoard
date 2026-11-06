@@ -47,6 +47,7 @@ void setup() {
         Wire.setSDA(PIN_I2C_SDA);
         Wire.setSCL(PIN_I2C_SCL);
         Wire.begin();
+        Wire.setClock(400000);          // 24AA64, SHT31 and MPU-6000 all support fast mode
         diagMark(DIAG_NV_BEGIN);
         nvBegin();                      // loads `settings` (defaults when missing or bad)
         diagMark(DIAG_IMU_BEGIN);
