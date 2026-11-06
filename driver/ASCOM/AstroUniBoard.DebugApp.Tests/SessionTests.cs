@@ -106,6 +106,22 @@ namespace AstroUniBoard.DebugApp.Tests
         }
 
         [Theory]
+        [InlineData("imu", "IMU")]
+        [InlineData("IMU", "IMU")]
+        [InlineData("motors", "Motors / StallGuard")]
+        [InlineData("firmware", "Firmware")]
+        public void TabOptionSelectsTheTab(string option, string title)
+        {
+            using (var f = new MainForm(false, null))
+            {
+                Assert.True(f.SelectTab(option));
+                var tabs = (System.Windows.Forms.TabControl)typeof(MainForm).GetField("tabs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(f);
+                Assert.Equal(title, tabs.SelectedTab.Text);
+                Assert.False(f.SelectTab("nonsense"));
+            }
+        }
+
+        [Theory]
         [InlineData("33", ":33#")]
         [InlineData(":33", ":33#")]
         [InlineData(" :41,F# ", ":41,F#")]

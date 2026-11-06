@@ -1,7 +1,9 @@
 // AstroUniBoard control & debug app (#45).
-//   AstroUniBoard.DebugApp.exe [--port COM9] [--connect] [--loopback] [--screenshots <folder>]
+//   AstroUniBoard.DebugApp.exe [--port COM9] [--connect] [--tab imu] [--loopback] [--screenshots <folder>]
 //   --port         preselect a direct connection to this port
 //   --connect      connect at start with the preselected choice
+//   --tab          open on this tab (first word of its title: status, focuser, rotator, motors, imu,
+//                  environment, console, log, firmware); the driver's Setup dialog uses --connect --tab imu
 //   --loopback     add the development choice "ASCOM code path over an in-process driver contract"
 //   --screenshots  connect, save a PNG of every tab into the folder, exit (for docs and PRs)
 using System;
@@ -18,7 +20,7 @@ namespace AstroUniBoard.DebugApp
         [STAThread]
         private static void Main(string[] args)
         {
-            string port = null, shots = null;
+            string port = null, shots = null, tab = null;
             bool loopback = false, connect = false;
             for (int i = 0; i < args.Length; i++)
             {
@@ -26,11 +28,13 @@ namespace AstroUniBoard.DebugApp
                 if (a == "--port" && i + 1 < args.Length) port = args[++i];
                 else if (a == "--loopback") loopback = true;
                 else if (a == "--connect") connect = true;
+                else if (a == "--tab" && i + 1 < args.Length) tab = args[++i];
                 else if (a == "--screenshots" && i + 1 < args.Length) { shots = args[++i]; connect = true; }
             }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             var form = new MainForm(loopback, port);
+            if (tab != null) form.SelectTab(tab);
             if (connect) form.Shown += async (s, e) => await form.AutoConnect(shots);
             Application.Run(form);
         }
@@ -38,6 +42,14 @@ namespace AstroUniBoard.DebugApp
 
     internal sealed partial class MainForm
     {
+        /// <summary>Selects the tab whose title starts with <paramref name="name"/> (case-insensitive); false if none.</summary>
+        internal bool SelectTab(string name)
+        {
+            foreach (TabPage p in tabs.TabPages)
+                if (p.Text.StartsWith(name.Trim(), StringComparison.OrdinalIgnoreCase)) { tabs.SelectedTab = p; return true; }
+            return false;
+        }
+
         internal async Task AutoConnect(string screenshotFolder)
         {
             await ConnectAsync();
