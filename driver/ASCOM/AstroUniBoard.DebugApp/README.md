@@ -62,6 +62,8 @@ be skipped). Hardware tests run only with `ASTROUNIBOARD_PORT=COM9` (or `auto`):
 rotator moves on both paths; `ASTROUNIBOARD_DFU_IMAGE=<bin>` additionally flashes that image.
 `ASTROUNIBOARD_ASCOM=1` checks the installed LocalServer read-only (no moves) next to any other
 connected client, and that closing the app leaves that client connected.
+`ASTROUNIBOARD_ASCOM=moves` (no other client): small moves, a halted focuser move and IMU home through
+the installed driver.
 
 ```
 dotnet test driver/ASCOM/AstroUniBoard.sln

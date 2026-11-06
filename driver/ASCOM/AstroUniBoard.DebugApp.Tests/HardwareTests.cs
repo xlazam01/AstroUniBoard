@@ -72,6 +72,41 @@ namespace AstroUniBoard.DebugApp.Tests
             Assert.Equal(before, Clients());
         }
 
+        /// <summary>
+        /// ASTROUNIBOARD_ASCOM=moves: the installed LocalServer with no other client. Small moves, a
+        /// halted focuser move and IMU home (needs a valid IMU calibration and the scope off the zenith).
+        /// </summary>
+        [Fact]
+        public void InstalledDriverMoves()
+        {
+            if (Environment.GetEnvironmentVariable("ASTROUNIBOARD_ASCOM") != "moves") return;
+            using (var s = new AscomSession())
+            {
+                Exercise(s);
+
+                BoardView v = s.Snapshot();
+                int foc = v.Status.FocuserPosition;
+                int target = foc >= v.Focuser.MaxPosition / 2 ? 0 : v.Focuser.MaxPosition;
+                Assert.Equal("OK", s.Raw(Commands.FocuserMoveTo(target)));
+                Thread.Sleep(700);
+                Assert.Equal((int)BoardState.FocuserMoving, s.Snapshot().Status.State);
+                Assert.Equal("OK", s.Do(BoardAction.HaltAll));
+                v = WaitIdle(s);
+                output.WriteLine("halted at " + v.Status.FocuserPosition + " (from " + foc + " towards " + target + ")");
+                Assert.NotEqual(target, v.Status.FocuserPosition);
+                Assert.NotEqual(foc, v.Status.FocuserPosition);
+                Assert.Equal("OK", s.Raw(Commands.FocuserMoveTo(foc)));
+                Assert.Equal(foc, WaitIdle(s).Status.FocuserPosition);
+
+                Assert.Equal("OK", s.Do(BoardAction.ImuHome));
+                v = WaitIdle(s);
+                output.WriteLine("IMU home: rotator " + v.Status.RotatorAngle + " cdeg, error " + v.Status.Error + ", flags 0x" + v.Status.Flags.ToString("X") + ", " + s.Raw(Commands.Imu));
+                Assert.Equal(0, v.Status.Error);
+                Assert.False(v.Status.Has(StatusFlags.RotatorUnverified));
+                foreach (LogEntry e in s.ReadLog(0).Skip(Math.Max(0, s.ReadLog(0).Count - 8))) output.WriteLine("log " + e.Text);
+            }
+        }
+
         private static int Clients()
         {
             {
