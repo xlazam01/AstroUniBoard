@@ -1,15 +1,16 @@
 # Serial protocol — AstroUniBoard firmware V2
 
-Status: **1.0 (2026-11-06)** — complete definition for the first V2 firmware: framing, USB identity,
-common block 20–49 (#7), focuser 50–69 (#8), rotator 70–89 (#9), environment / IMU 90–99 (#10),
-error codes (#11). Changes after this go through a PR and raise the protocol version when incompatible.
+Status: **2.0 (2026-11-06)**. Changes since 1.0: identify gate, `ERR,16` (#58); IMU zero calibration
+from three captures (#32). 1.0 covered framing, USB identity, common block 20–49 (#7), focuser 50–69
+(#8), rotator 70–89 (#9), environment / IMU 90–99 (#10) and error codes (#11). Changes go through a PR
+and raise the protocol version when incompatible.
 
 The protocol is a member of the **OpenWheel family**: same framing, same reply style, same numbers
 and reply formats for the common commands, so the host `*.Core` libraries (transport, detection,
 worker, circuit breaker) can share code. Reference: OpenWheel `docs/PROTOCOL.md` (protocol 2).
 Differences from OpenWheel are listed in [§7](#7-differences-from-openwheel).
 
-Protocol version reported by identify: **1** (raised on any incompatible change).
+Protocol version reported by identify: **2** (raised on any incompatible change).
 
 ## 1. Transport
 
@@ -31,6 +32,22 @@ Protocol version reported by identify: **1** (raised on any incompatible change)
 - Axis selector in common commands: `F` focuser, `R` rotator (upper or lower case).
 - Hosts send **one command at a time** and wait for the answer (timeout ~1 s; 2 s for `:23#`), and
   never burst more than ~64 bytes — a lost `#` means no reply, so a timeout is always needed.
+
+### Identify first (#58)
+
+USB VID/PID 1209:0001 is the shared pid.codes test PID (OpenWheel and other devices use it too), so
+the firmware acts on nothing before the host has identified it:
+
+- After power-on or any reset only `:25#` (ping) and `:32#` (identify) are accepted. Every other
+  command answers **`ERR,16`** and does nothing.
+- An answered `:32#` unlocks all commands until the next reset. Opening or closing the port does not
+  lock again: a port open cannot be told apart from a host changing the port settings (both send
+  SET_LINE_CODING, e.g. pyserial on every timeout change; measured 2026-11-06).
+- Hosts must identify every port before sending anything else and check the `ASTROUNIBOARD` prefix
+  and the protocol version. After a reboot they reconnect to the same USB serial number, never to
+  "the first 1209:0001 port".
+
+Same rule and error number in OpenWheel (xlazam01/OpenWheel#16).
 
 ### Replies
 
@@ -114,7 +131,8 @@ ASTROUNIBOARD,REV2,FW2.0.0,1,3A00FF12ABCD,F#
 | caps | hex bitmask of what this **firmware build** supports: bit0 focuser, bit1 rotator, bit2 IMU, bit3 environment (SHT31) |
 
 Whether a sensor actually answered is in the status flags (3.2), not in caps. A host accepts a port
-only if the USB VID/PID match **and** this line parses with a supported protocol version.
+only if the USB VID/PID match **and** this line parses with a supported protocol version. Answering
+`:32#` also unlocks the other commands (see "Identify first" in §2).
 
 ### 3.2 Status (`:33#`)
 
@@ -172,10 +190,15 @@ Driver temperatures are read while idle.
 ### 3.4 StallGuard (`:41`, `:42`)
 
 `:41,F#` → `G,<threshold>,<last>,<min>,<max>#`: the axis' threshold and the `SG_RESULT` readings
-(0..510, lower = more load) of its last move, `-1` if none. With a non-zero threshold, a reading at
-or below `2 × threshold` while the axis runs faster than the axis' StallGuard minimum speed stops the
-move with sticky error 13; the first 200 ms of a move are ignored. Default 0 (off) on both axes.
+(0..510, lower = more load) of its last move, `-1` if none. Only readings the stall check uses are
+counted: after the first 200 ms of a move and above the StallGuard minimum speed of 100 full steps/s.
+With a non-zero threshold, such a reading at or below `2 × threshold` stops the move with sticky
+error 13. Default 0 (off) on both axes.
 Tuning as OpenWheel: run a few normal moves, take the lowest `min`, set about a third of it.
+Measured on the rev 1 test board (2026-11-06): the focuser at 900 steps/s reads 48..136 while
+cruising, but a motor held by hand did not pull the reading below 46, so detection of a light block is
+not reliable at the default speed and current. The rotator at its default 12°/s (16 microsteps)
+runs below the minimum speed: StallGuard on the rotator needs 18°/s or more.
 
 ### 3.5 Reset info (`:46#`)
 
@@ -404,11 +427,16 @@ reading; `power_cycles` counts supply restarts of the on-board sensor. Readings 
   the optical axis is too steep); `tilt` = angle between the optical axis and vertical, cdeg
   (`-99999` when not calibrated); `ax ay az` = filtered acceleration in mg, chip axes.
 - `:95` (Q19b) — set the camera **landscape, upright**, scope not near the zenith, then send `:95#`.
-  The firmware records gravity `g0`, rotates the rotator +90°, records `g90`, returns to the start,
-  and derives the rotation axis `n = g0 × g90` (normalised). This works for any mounting of the
-  board (Triton: upside down). State 4 while it runs. It fails with sticky error 3 when the two
-  vectors are not about 90° apart (rotator slipped, IMU moved). On success `g0` and `n` are written
-  to the EEPROM at once (not waiting for `:23#`), status flag 7 clears and the current angle is set to 0.
+  The firmware records gravity `g0`, rotates the rotator +90° and records `g90`, then +180° and
+  records `g180`, and returns to the start. Gravity moves on a circle around the rotation axis, so
+  the axis is the normal of the plane through the three points, `n = (g90 − g0) × (g180 − g90)`
+  (normalised). This is exact at **any elevation** of the optical axis (protocol 1 used `g0 × g90`,
+  exact only with the scope horizontal) and works for any mounting of the board (Triton: upside
+  down). The moves need 180° of cable wrap above the current angle, else `ERR,7` (sync with `:76`
+  first if the angle is wrong). State 4 while it runs (about 35 s at the default speed). It fails
+  with sticky error 3 when a step is not about 90° (70..110°: rotator slipped, IMU moved). On success
+  `g0` and `n` are written to the EEPROM at once (not waiting for `:23#`), status flag 7 clears and
+  the current angle is set to 0.
 - Roll is the signed angle from `g0` to the current gravity, both projected onto the plane normal to
   `n`, sign by `n`. It is meaningful only when gravity has a component in that plane: within ~20° of
   vertical, `:77` and `:95` answer `ERR,15`.
@@ -424,7 +452,9 @@ Example:
 ## 5. Typical host sequence
 
 1. Find ports with VID 0x1209 / PID 0x0001 (later the assigned PID).
-2. `:32#` → check the `ASTROUNIBOARD` prefix and protocol version; read caps.
+2. `:32#` first, before any other command (a device that is not identified answers `ERR,16`) →
+   check the `ASTROUNIBOARD` prefix and protocol version; read caps. Remember the USB serial number
+   and reconnect only to that one after a reboot.
 3. `:33#` → state, positions, flags. Warn the user on flags 0/1 (unverified position) and 2 (EEPROM).
 4. Moves: send the move command, expect `OK#`, poll `:33#` every 100–250 ms until state is 1.
 5. On `error` ≠ 0: show it, then `:34,0#` to clear.
@@ -452,6 +482,7 @@ different meaning; codes OpenWheel uses for wheel-only faults are left unused he
 | 13 | motor stalled (StallGuard) | sticky fault | |
 | 14 | sensor missing or no valid reading | rejection | SHT31 / IMU query without a valid value |
 | 15 | IMU: optical axis too close to vertical | rejection | `:77` / `:95` near the zenith (roll undefined) |
+| 16 | not identified | rejection | any command but `:25` / `:32` before `:32#` since the last reset |
 
 A sticky fault stops the moving axis, returns state to idle and keeps the code in `:33#` / `:34#`
 until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in the reply.
