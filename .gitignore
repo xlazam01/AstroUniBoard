@@ -48,3 +48,7 @@ driver/**/TestResults/
 
 # Local dev copy of the ASCOM LocalServer that gets registered (as in OpenWheel)
 driver/ASCOM/dist/
+
+# .NET build output
+bin/
+obj/
