@@ -12,7 +12,7 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2, ASCOM driver 0.2.0 (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
+| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
 | Sensors | SHT31 temperature/humidity on board (+ optional external SHT31), MPU-6000 accelerometer for camera roll |
@@ -300,7 +300,7 @@ button sequence is the recovery path, and in the Triton enclosure the board has 
 
 - **ASCOM** (Windows, Platform 7): one LocalServer with Focuser, Rotator and ObservingConditions, so N.I.N.A. and the
   debug app can be connected at the same time. Installer:
-  [releases](https://github.com/xlazam01/AstroUniBoard/releases) (`driver-v0.2.0`, pre-release). Sources and
+  [releases](https://github.com/xlazam01/AstroUniBoard/releases) (`driver-v0.2.1`, pre-release). Sources and
   structure: [driver/ASCOM/README.md](driver/ASCOM/README.md), spec in [driver/ASCOM/SPEC.md](driver/ASCOM/SPEC.md).
 - **Control & debug app**: live status, jog, motor setup, IMU calibration, environment, raw console, log and firmware
   update. [README](driver/ASCOM/AstroUniBoard.DebugApp/README.md).
