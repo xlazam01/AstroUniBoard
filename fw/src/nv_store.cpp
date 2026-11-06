@@ -7,7 +7,7 @@
 //
 // Record header (8 bytes): magic u16, version u8, reserved u8, length u16 (payload bytes), crc u16.
 // The CRC-16/CCITT-FALSE covers the first 6 header bytes and the payload.
-// Header bytes all 0xFF = never written: defaults, no fault. Any other mismatch = fault.
+// Header bytes all 0xFF or a foreign magic = never written: defaults, no fault. Any other mismatch = fault.
 //
 // Migration: a record with an older version and a shorter payload is loaded by copying the stored
 // prefix over the defaults (settings.h rule: fields are only appended). A newer version or an
@@ -196,8 +196,10 @@ static LoadResult loadRecord(uint16_t addr, uint16_t area, uint16_t magic, uint8
     bool blank = true;
     for (uint8_t i = 0; i < sizeof(h); i++) if (hb[i] != 0xFF) blank = false;
     if (blank) return LOAD_BLANK;
+    // Another magic = never written by this firmware (e.g. old fw-onstepx data): same as blank.
+    if (h.magic != magic) return LOAD_BLANK;
 
-    if (h.magic != magic || h.version == 0 || h.version > version) return LOAD_BAD;
+    if (h.version == 0 || h.version > version) return LOAD_BAD;
     if (h.length == 0 || h.length > area - sizeof(NvHeader)) return LOAD_BAD;
     if (h.version == version ? h.length != size : h.length >= size) return LOAD_BAD;
 
