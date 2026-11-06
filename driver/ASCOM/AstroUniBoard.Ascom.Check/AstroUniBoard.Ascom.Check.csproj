@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <PlatformTarget>x86</PlatformTarget>
+    <Platforms>x86</Platforms>
+    <AscomGac>$(windir)\assembly\GAC_MSIL</AscomGac>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ASCOM.DeviceInterfaces"><HintPath>$(AscomGac)\ASCOM.DeviceInterfaces\6.0.0.0__565de7938946fba7\ASCOM.DeviceInterfaces.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="ASCOM.Exceptions"><HintPath>$(AscomGac)\ASCOM.Exceptions\6.0.0.0__565de7938946fba7\ASCOM.Exceptions.dll</HintPath><Private>False</Private></Reference>
+    <ProjectReference Include="..\AstroUniBoard.Ascom\AstroUniBoard.Ascom.csproj" />
+  </ItemGroup>
+</Project>
