@@ -68,10 +68,10 @@ internal static class Program
         Info("Snapshot = " + snap);
         Check("Snapshot has identity, status, focuser and rotator settings", snap.Contains("\"identity\":{") && snap.Contains("\"status\":{") && snap.Contains("\"focuser\":{") && snap.Contains("\"rotator\":{"));
         string raw = foc.Action("AstroUniBoard:Raw", ":33#");
-        Check("Raw :33# returns the status line with '#'", raw.StartsWith("S,") && raw.EndsWith("#"), raw);
-        Check("Raw :99# (reserved) returns ERR,10#", foc.Action("AstroUniBoard:Raw", ":99#") == "ERR,10#");
+        Check("Raw :33# returns the status line without '#'", raw.StartsWith("S,") && !raw.EndsWith("#"), raw);
+        Check("Raw :99# (reserved) returns ERR,10", foc.Action("AstroUniBoard:Raw", ":99#") == "ERR,10");
         Check("Raw garbage returns ERROR:", foc.Action("AstroUniBoard:Raw", "hello").StartsWith("ERROR: "));
-        Check("CommandString(:25#) = OK#", foc.CommandString(":25#", true) == "OK#");
+        Check("CommandString(:25#) = OK", foc.CommandString(":25#", true) == "OK");
         Check("CommandString garbage throws DriverException", Expect<ASCOM.DriverException>(() => foc.CommandString("x", true)) != null);
         Check("unknown action throws ActionNotImplementedException", Expect<ASCOM.ActionNotImplementedException>(() => foc.Action("Explode", "")) != null);
         Check("SupportedActions lists the 10 contract actions", foc.SupportedActions.Count == 10 && foc.SupportedActions.Contains("AstroUniBoard:Raw"));

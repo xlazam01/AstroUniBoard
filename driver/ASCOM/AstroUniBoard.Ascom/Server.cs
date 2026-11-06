@@ -54,6 +54,7 @@ namespace AstroUniBoard.Ascom
         private static BoardController controller;
         private static readonly ManualResetEvent exitEvent = new ManualResetEvent(false);
         public static bool StartedByCom { get; private set; }
+        private static bool args0Elevated;
 
         /// <summary>Ring buffer of the controller's log (and the driver's own messages) for the debug app.</summary>
         public static readonly LogBuffer LogRing = new LogBuffer(1000);
@@ -133,7 +134,8 @@ namespace AstroUniBoard.Ascom
         private static int Main(string[] args)
         {
             string arg = args.Length > 0 ? args[0].ToLowerInvariant() : "";
-            bool silent = args.Length > 1 && args[1].ToLowerInvariant() == "/silent";   // used by the installer: no message boxes
+            bool silent = Array.Exists(args, a => a.ToLowerInvariant() == "/silent");   // used by the installer: no message boxes
+            args0Elevated = Array.Exists(args, a => a.ToLowerInvariant() == "/elevated");  // the UAC relaunch of ourselves
             try
             {
                 switch (arg)
@@ -248,11 +250,19 @@ namespace AstroUniBoard.Ascom
         {
             if (IsAdministrator())
             {
-                int rc = action();
-                if (rc == 0 && !silent) Message("AstroUniBoard drivers (Focuser, Rotator, ObservingConditions) " + doneWord + ".");
-                return rc;
+                // IsInRole can say "administrator" for a filtered (not elevated) token on some Windows
+                // builds: an access-denied registry write then falls through to the UAC relaunch below.
+                try
+                {
+                    int rc = action();
+                    if (rc == 0 && !silent) Message("AstroUniBoard drivers (Focuser, Rotator, ObservingConditions) " + doneWord + ".");
+                    return rc;
+                }
+                catch (UnauthorizedAccessException) { if (args0Elevated) throw; }
+                catch (System.Security.SecurityException) { if (args0Elevated) throw; }
             }
-            var psi = new ProcessStartInfo(Application.ExecutablePath, silent ? arg + " /silent" : arg) { UseShellExecute = true, Verb = "runas" };
+            if (args0Elevated) return 5;   // already the elevated copy: do not loop
+            var psi = new ProcessStartInfo(Application.ExecutablePath, arg + (silent ? " /silent" : "") + " /elevated") { UseShellExecute = true, Verb = "runas" };
             try
             {
                 using (Process p = Process.Start(psi))
