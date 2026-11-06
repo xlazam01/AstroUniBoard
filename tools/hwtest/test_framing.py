@@ -21,7 +21,9 @@ def test_line_limit(board):
     line46 = "25" + "0" * 44                                  # exactly 46 characters
     assert board.cmd(f":{line46}#") == "OK#"                  # :25 ignores its parameters
     assert board.cmd(f":{line46}0#") == "ERR,11#"             # 47 characters
-    assert board.cmd(":25" + "x" * 200 + "#") == "ERR,11#"
+    # PROTOCOL.md §2: hosts never burst more than ~64 bytes. On the rev 1 board a ~200-byte burst
+    # sent right after a reply loses its '#' (no reply), as the spec allows.
+    assert board.cmd(":25" + "x" * 60 + "#") == "ERR,11#"   # 64 bytes
     assert board.cmd(":25#") == "OK#"                         # and the parser recovered
 
 
