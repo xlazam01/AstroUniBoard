@@ -52,9 +52,9 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **Switched sensor supply** | PB9 → R32 → SHT31 VDD and ADDR | The firmware can power-cycle a stuck sensor. Tying ADDR to the same pin moves the on-board sensor to 0x45, so an **external SHT31 on J9** (0x44) fits on the same bus, for example on the dew shield |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
-| **Power path** | XT30 J6 → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
+| **Power path** | XT30 J6 (SMAJ15A TVS D24 across it, rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. There is no reverse-polarity protection: rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
 | **12 V sense** (rev 2.1) | R33/R34 divider on PB10 | The firmware can see that motor power is missing or low before a move, instead of finding out from a driver that stops answering |
-| **Motor supply jumpers** | JP5 (bridged: motors from 12 V), JP4 (open: motors from 5 V) | 5 V motors can be used from USB power for light loads. **Never close both**, see [Assembly](#4-solder-jumpers-jp4--jp5) |
+| **Motor supply jumper** | JP4, one 3-pad solder jumper `12V – Vdrive – 5V`, 12 V side bridged | 5 V motors can be used from USB power for light loads. One middle pad means only one source can be selected (rev 2.0 had two separate jumpers that could short 12 V onto 5 V), see [Assembly](#4-solder-jumper-jp4) |
 | **Status LEDs** | D1 status (PB12), D2 activity (PB4), D3 = 12 V present, D4 = 5 V present | You can see power, motion and errors without a PC. The brightness is adjustable and the LEDs are dim, because the board sits next to a camera |
 | **Buttons** | RST, LEFT (= BOOT0), RIGHT | RST and BOOT0 are for recovery. LEFT/RIGHT are not used by the firmware: in the Triton enclosure the board is mounted upside down and out of reach |
 | **Spare I/O** | J4 Hall/index, J8 AUX1/AUX2, J9 I²C, J10 UART6 — all DNP | For other uses of the board (filter wheel index, dew heater MOSFET, GPS, SQM). See [docs/USE_CASES.md](docs/USE_CASES.md) |
@@ -97,14 +97,13 @@ These options were weighed during the design, with the reason for each decision.
 | J2 | top edge | USB-C **to the PC** (upstream, board + hub) | — |
 | J7 | top edge | USB-C **to the camera** (downstream, hub port) | — |
 | J5 | top edge, horizontal | **Rotator motor**, JST-PH 4 (S4B-PH-K) | 1 B2, 2 B1, 3 A1, 4 A2 |
-| J6 | **bottom** edge, under J5 | **12 V in**, XT30PW-M (male pins on the board) | `+` / `−` marked on the bottom silkscreen |
+| J6 | **bottom** edge, under J5 | **12 V in**, XT30PW-M (male pins on the board), TVS D24 next to it | `+` / `−` marked on the bottom silkscreen. **Not reverse-polarity protected** |
 | J3 | pads, DNP | Focuser motor (solder wires or a vertical JST-PH 4) | 1 B2 (G), 2 B1 (BK), 3 A1 (R), 4 A2 (BL): colours on the bottom silkscreen |
 | J4 | pads, DNP | Hall / index input | 1 3V3, 2 GND, 3 HALL |
 | J8 | pads, DNP | AUX GPIO | 1 3V3, 2 AUX1 (X1), 3 AUX2 (X2), 4 GND |
 | J9 | pads, DNP | External I²C (second SHT31 at 0x44) | 1 SDA, 2 SCL, 3 3V3, 4 GND |
 | J10 | pads, DNP | UART6 | 1 3V3, 2 TX6, 3 RX6, 4 GND |
-| JP5 | top | Motor supply from **+12 V** | **bridged** by default |
-| JP4 | top | Motor supply from **+5 V** | **open** by default |
+| JP4 | top, between the XT30 pins | Motor supply (Vdrive), 3 pads `12V – Vdrive – 5V` | **12V side bridged** by default |
 
 The motor pin order (B2 B1 A1 A2) matches common 4-wire NEMA cables. Check your motor's coil pairs with a meter:
 a swapped pair makes the motor buzz instead of turning. It does not damage anything.
@@ -130,6 +129,7 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | Y2 | 1 | 12 MHz crystal (TAXM12M4RDBCCT2T) | 3225 | C164041 |
 | L4 | 1 | 10 µH (IHLP2020BZER100M11) | IHLP-2020 | C844984 |
 | D23 | 1 | SS34 Schottky | SMA | C8678 |
+| D24 | 1 | SMAJ15A TVS (12 V input) | SMA, **bottom** | C86819 |
 | D1–D4 | 4 | LED red | 0402 | C130719 |
 | J2, J7 | 2 | USB-C receptacle (G-Switch GT-USB-7010ASV) | THT/SMD | C2988369 |
 | J5 | 1 | JST S4B-PH-K, horizontal | THT | C265452 |
@@ -156,7 +156,7 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | R18 | 1 | 510 Ω | 0402 | C25123 |
 | R32 | 1 | 47 Ω | 0402 | C25118 |
 | R28–R31 | 4 | 22 Ω | 0402 | C25092 |
-| JP5 / JP4 | — | solder jumpers, bridged / open | — | — |
+| JP4 | — | 3-pad solder jumper, 12 V side bridged | — | — |
 | **Not fitted (DNP)** | | | | |
 | J3, J8, J9, J10 | 4 | JST B4B-PH-K, vertical (optional) | THT | C131334 |
 | J4 | 1 | JST B3B-PH-K, vertical (optional) | THT | C131339 |
@@ -168,7 +168,9 @@ Notes before ordering:
 
 - **U5 STM32G0B1CBT6 had no JLC stock** on 2026-11-06. Use global sourcing or a consigned part, or the
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
-- 17 Basic, 3 Preferred and 22 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
+- 17 Basic, 3 Preferred and 23 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
+- D24 is the only SMD part on the **bottom** side, so the order needs JLC's two-sided assembly (or fit D24 by hand:
+  SMA, cathode band towards the XT30).
 - Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the `hw-rev2.x` GitHub release,
   or generate them yourself as described in [docs/HARDWARE.md](docs/HARDWARE.md#production-files).
 
@@ -206,7 +208,7 @@ Do it in this order:
 5. Check polarity against the `+` / `−` marks on the bottom silkscreen, and that the XT30 pins are not
    shorted to each other (> 1 kΩ between `+` and `−`; it starts low and rises while the capacitors charge).
 
-If JLC fitted J5 for you, start at step 2.
+If JLC fitted J5 for you, start at step 2. The bottom silkscreen says `J5 FIRST` next to the XT30 as a reminder.
 
 ### 2. Focuser motor (J3)
 
@@ -218,13 +220,16 @@ B4B-PH-K from the top. Leave some strain relief: a zip tie through one of the mo
 J4 (Hall), J8 (AUX), J9 (external SHT31 / I²C), J10 (UART6): vertical JST-PH, inserted from the top. They are
 DNP because most users don't need them, and a vertical socket in the cable path is in the way in a tight enclosure.
 
-### 4. Solder jumpers JP4 / JP5
+### 4. Solder jumper JP4
 
-- Default: **JP5 bridged** (motors from 12 V), **JP4 open**.
-- For 5 V motors only: cut JP5 **first**, check with a meter that it is open, then bridge JP4.
-- **Never have JP4 and JP5 closed at the same time.** That ties +12 V directly to the 5 V rail, and the 12 V supply
-  then feeds 12 V into the hub, the 3.3 V LDO (and with it the MCU and the sensors) and the camera on J7.
-  The ideal diode U11 should keep it off the PC's port, but don't count on it.
+JP4 has three pads, `12V – Vdrive – 5V` (silkscreen `12V` left, `5V` right). The middle pad feeds the motor drivers.
+
+- Default: the **12V side is bridged** by a copper trace (motors from 12 V).
+- For 5 V motors only: cut the trace between the `12V` pad and the middle pad **first**, check with a meter that it
+  is open, then bridge the middle pad to `5V` with solder.
+- **Never bridge all three pads.** That ties +12 V directly to the 5 V rail, and the 12 V supply then feeds 12 V into
+  the hub, the 3.3 V LDO (and with it the MCU and the sensors) and the camera on J7. With one middle pad this needs a
+  blob across all three pads, which is easy to see; rev 2.0 boards still have the two separate jumpers JP4/JP5.
 
 ### 5. Mounting
 
