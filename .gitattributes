@@ -1,0 +1,22 @@
+# KiCad text files: keep LF so diffs stay clean across machines
+*.kicad_sch text eol=lf
+*.kicad_pcb text eol=lf
+*.kicad_pro text eol=lf
+*.kicad_sym text eol=lf
+*.kicad_mod text eol=lf
+sym-lib-table text eol=lf
+fp-lib-table text eol=lf
+
+# CAD and print files through Git LFS
+*.par filter=lfs diff=lfs merge=lfs -text
+*.asm filter=lfs diff=lfs merge=lfs -text
+*.psm filter=lfs diff=lfs merge=lfs -text
+*.dft filter=lfs diff=lfs merge=lfs -text
+*.step filter=lfs diff=lfs merge=lfs -text
+*.stp filter=lfs diff=lfs merge=lfs -text
+*.stl filter=lfs diff=lfs merge=lfs -text
+*.3mf filter=lfs diff=lfs merge=lfs -text
+
+*.pdf binary
+*.bin binary
+*.hex binary

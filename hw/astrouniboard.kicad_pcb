@@ -8531,7 +8531,7 @@
 			)
 		)
 	)
-	(footprint "myLib_SMD:L_5.5x5.1mm"
+	(footprint "AstroUniBoard:L_5.5x5.1mm"
 		(layer "F.Cu")
 		(uuid "43f36bf4-3368-460d-9a31-3dc65e7ee027")
 		(at 96.15 106.64 -90)
@@ -17022,7 +17022,7 @@
 			(uuid "e0b12424-27e0-4cbd-9125-0376f62fa2a3")
 		)
 		(embedded_fonts no)
-		(model "F:/Projekty/KiCad/Library/3dmodels/sensirion.3dshapes/Sensirion_SHT3x-DIS_DFN-8_2.5x2.5mm.step"
+		(model "${KIPRJMOD}/3dmodels/Sensirion_SHT3x-DIS_DFN-8_2.5x2.5mm.step"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -31501,7 +31501,7 @@
 			)
 		)
 	)
-	(footprint "Connector_AMASS:AMASS_XT30PW-M_1x02_P2.50mm_Horizontal"
+	(footprint "AstroUniBoard:AMASS_XT30PW-M_1x02_P2.50mm_Horizontal"
 		(layer "B.Cu")
 		(uuid "4a00ab0d-3a1a-4724-9e5f-d5a8fcb1ecda")
 		(at 85.05 120.2)
@@ -31823,7 +31823,7 @@
 			(uuid "1df827ac-d430-4ec6-8988-5743cb4c89dc")
 		)
 		(embedded_fonts no)
-		(model "F:/Projekty/KiCad/Library/3dmodels/amass.3dshapes/AMASS_XT30PW-M_1x02_P2.50mm_Horizontal.step"
+		(model "${KIPRJMOD}/3dmodels/AMASS_XT30PW-M_1x02_P2.50mm_Horizontal.step"
 			(offset
 				(xyz -2.5 10 0)
 			)
@@ -31835,7 +31835,7 @@
 			)
 		)
 	)
-	(footprint "myLib_Logo:Logo_WorksOnMySky_14mm"
+	(footprint "AstroUniBoard:Logo_WorksOnMySky_14mm"
 		(locked yes)
 		(layer "B.Cu")
 		(uuid "eb0d4aed-00f7-414d-aea2-6c73f48c0d3a")

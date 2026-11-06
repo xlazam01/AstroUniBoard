@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "AstroUniBoard")(type "KiCad")(uri "${KIPRJMOD}/AstroUniBoard.pretty")(options "")(descr "AstroUniBoard project footprints (L4 inductor, J6 XT30, logo)"))
+)
