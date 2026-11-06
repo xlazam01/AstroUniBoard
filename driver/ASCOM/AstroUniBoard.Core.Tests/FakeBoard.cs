@@ -236,7 +236,7 @@ namespace AstroUniBoard.Core.Tests
                 case "71":
                     if (!Arg(body, out v) || v < 0 || v > 35999) { Reply("ERR,7"); return; }
                     if (state != 1) { Reply("ERR,8"); return; }
-                    if (RefuseUnverifiedRotatorCode != 0 && (Flags & 2) != 0) { Reply("ERR," + RefuseUnverifiedRotatorCode); return; }
+                    if (RefuseUnverifiedRotatorCode != 0 && (Flags & 512) != 0) { Reply("ERR," + RefuseUnverifiedRotatorCode); return; }
                     int best = int.MinValue;
                     foreach (int c in new[] { v - 36000, v, v + 36000 })
                         if (c >= WrapMin && c <= WrapMax && (best == int.MinValue || Math.Abs(c - RotCdeg) < Math.Abs(best - RotCdeg))) best = c;

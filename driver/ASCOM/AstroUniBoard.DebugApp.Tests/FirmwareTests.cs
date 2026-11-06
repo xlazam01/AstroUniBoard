@@ -274,7 +274,7 @@ namespace AstroUniBoard.DebugApp.Tests
         [Fact]
         public void RefusedMoveWithTheUnverifiedFlagIsExplained()
         {
-            Assert.Equal(BoardErrors.RotatorUnverifiedHint, Replies.RotatorRefusalHint(":71,9000#", "ERR,7", Status((int)StatusFlags.RotatorUnverified)));
+            Assert.Equal(BoardErrors.RotatorUnverifiedHint, Replies.RotatorRefusalHint(":71,9000#", "ERR,17", Status((int)StatusFlags.RotatorSuspect)));
             Assert.Equal(BoardErrors.RotatorUnverifiedHint, Replies.RotatorRefusalHint(":72,-500#", "ERR,17", Status((int)StatusFlags.RotatorUnverified | 0x30)));
         }
 
@@ -285,6 +285,7 @@ namespace AstroUniBoard.DebugApp.Tests
             Assert.Null(Replies.RotatorRefusalHint(":71,9000#", "OK", unverified));
             Assert.Null(Replies.RotatorRefusalHint(":71,9000#", "ERR,8", unverified));      // busy is its own message
             Assert.Null(Replies.RotatorRefusalHint(":71,9000#", "ERR,7", Status(0x30)));    // angle verified: a real limit
+            Assert.Null(Replies.RotatorRefusalHint(":71,9000#", "ERR,7", unverified));      // bit 1 is set at every boot: ERR,7 is a real limit
             Assert.Null(Replies.RotatorRefusalHint(":51,100#", "ERR,7", unverified));       // focuser
             Assert.Null(Replies.RotatorRefusalHint(":71,9000#", "ERR,7", null));
         }

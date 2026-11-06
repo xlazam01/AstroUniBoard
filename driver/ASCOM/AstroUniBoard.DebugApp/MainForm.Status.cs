@@ -26,7 +26,8 @@ namespace AstroUniBoard.DebugApp
             Tuple.Create(StatusFlags.ExternalShtValid, "external SHT31 (J9) has a valid reading"),
             Tuple.Create(StatusFlags.ImuAnswering, "IMU answering"),
             Tuple.Create(StatusFlags.ImuNotCalibrated, "IMU zero not calibrated — run the IMU calibration"),
-            Tuple.Create(StatusFlags.SafeMode, "SAFE MODE: started after a watchdog reset with sensors off (see reset info)")
+            Tuple.Create(StatusFlags.SafeMode, "SAFE MODE: started after a watchdog reset with sensors off (see reset info)"),
+            Tuple.Create(StatusFlags.RotatorSuspect, "rotator angle SUSPECT (power lost mid-move, stall, never saved): rotator moves refused until IMU home or set home")
         };
 
         private void BuildStatusTab()

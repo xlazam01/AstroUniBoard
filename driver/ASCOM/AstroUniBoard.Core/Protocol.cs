@@ -37,7 +37,8 @@ namespace AstroUniBoard.Core
         MotorStall = 13,
         Sensor = 14,
         ImuVertical = 15,
-        NotIdentified = 16
+        NotIdentified = 16,
+        PositionUnverified = 17
     }
 
     public static class BoardErrors
@@ -53,9 +54,8 @@ namespace AstroUniBoard.Core
 
         /// <summary>
         /// True when a rejected rotator move is the unverified-angle refusal of #75.
-        /// TODO(#75): the firmware's error code for this refusal is not decided yet. Until it is, any
-        /// rejection other than busy counts while the status has <see cref="StatusFlags.RotatorUnverified"/>;
-        /// once PROTOCOL.md names the code, add it to <see cref="BoardError"/> and <see cref="Describe"/> and match it here.
+        /// The firmware answers <see cref="BoardError.PositionUnverified"/> (ERR,17) while status flag 9
+        /// (<see cref="StatusFlags.RotatorSuspect"/>) is set and the guard (:97) is on, and in safe mode.
         /// </summary>
         public static bool IsRotatorUnverifiedRefusal(int code, BoardStatus status)
         {
@@ -64,7 +64,7 @@ namespace AstroUniBoard.Core
 
         public static bool IsRotatorUnverifiedRefusal(int code, StatusFlags flags)
         {
-            return code > 0 && code != (int)BoardError.Busy && (flags & StatusFlags.RotatorUnverified) != 0;
+            return code == (int)BoardError.PositionUnverified;
         }
 
         public static string Describe(int code)
@@ -87,6 +87,7 @@ namespace AstroUniBoard.Core
                 case 14: return "sensor missing or no valid reading";
                 case 15: return "optical axis too close to vertical for the IMU";
                 case 16: return "board not identified on this connection";
+                case 17: return "position unverified: sync the axis first (rotator :76 or IMU home :77, focuser :56)";
                 default: return "unknown error code " + code.ToString(CultureInfo.InvariantCulture);
             }
         }
@@ -176,7 +177,8 @@ namespace AstroUniBoard.Core
         ExternalShtValid = 32,
         ImuAnswering = 64,
         ImuNotCalibrated = 128,
-        SafeMode = 256
+        SafeMode = 256,
+        RotatorSuspect = 512
     }
 
     /// <summary>Result of :33# (status).</summary>

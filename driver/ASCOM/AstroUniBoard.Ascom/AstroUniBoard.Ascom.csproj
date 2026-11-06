@@ -9,7 +9,7 @@
     <Platforms>x86</Platforms>
     <AssemblyName>AstroUniBoard.Ascom.Server</AssemblyName>
     <RootNamespace>AstroUniBoard.Ascom</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Description>ASCOM Focuser, Rotator and ObservingConditions drivers for the AstroUniBoard (one LocalServer)</Description>
     <!-- ASCOM Platform 7 assemblies come from the GAC of the machine that builds (same as OpenWheel) -->

@@ -529,16 +529,15 @@ namespace AstroUniBoard.Core.Tests
         [Fact]
         public void UnverifiedRotatorRefusalIsRecognised()
         {
-            // TODO(#75): use the firmware's code once PROTOCOL.md names it; 7 stands in for it
-            var b = new FakeBoard { RefuseUnverifiedRotatorCode = 7 };
-            b.Flags |= (int)StatusFlags.RotatorUnverified;
+            var b = new FakeBoard { RefuseUnverifiedRotatorCode = 17 };
+            b.Flags |= (int)StatusFlags.RotatorSuspect | (int)StatusFlags.RotatorUnverified;
             BoardController c = Connected(b);
             CommandResult r = c.RotatorMoveTo(0);
             Assert.False(r.Success);
             Assert.True(BoardErrors.IsRotatorUnverifiedRefusal(r.ErrorCode, c.Snapshot.Status));
 
-            b.Flags &= ~(int)StatusFlags.RotatorUnverified;
-            Assert.True(WaitFor(() => !c.Snapshot.Status.Has(StatusFlags.RotatorUnverified), 1000));
+            b.Flags &= ~(int)StatusFlags.RotatorSuspect;             // bit 1 alone (set at every boot) blocks nothing
+            Assert.True(WaitFor(() => !c.Snapshot.Status.Has(StatusFlags.RotatorSuspect), 1000));
             b.WrapMin = 0; b.WrapMax = 100;
             r = c.RotatorMoveTo(20000);                       // outside the wrap: a real limit, no hint
             Assert.Equal((int)BoardError.BadParameter, r.ErrorCode);
