@@ -24,3 +24,8 @@ void envBegin();
 void envUpdate();
 const ShtReading& envReading(EnvSensor s);
 uint16_t envPowerCycles();   // supply power cycles done to recover the on-board sensor
+
+// :90 — the sensor chosen by settings.envSelect (auto prefers the external J9 sensor, PROTOCOL.md §4.3).
+// Returns ENV_ONBOARD / ENV_EXTERNAL, or -1 when the chosen sensor has no valid reading (ERR,14).
+// Owner of this file: session C (#34).
+int8_t envSelected();
