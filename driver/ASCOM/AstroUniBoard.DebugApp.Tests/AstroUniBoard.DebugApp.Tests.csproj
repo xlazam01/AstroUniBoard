@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <IsPackable>false</IsPackable>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the in-memory board of the Core tests -->
+    <Compile Include="..\AstroUniBoard.Core.Tests\FakeBoard.cs" Link="FakeBoard.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
+    <ProjectReference Include="..\AstroUniBoard.Core\AstroUniBoard.Core.csproj" />
+    <ProjectReference Include="..\AstroUniBoard.DebugApp\AstroUniBoard.DebugApp.csproj" />
+  </ItemGroup>
+</Project>

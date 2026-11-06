@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <!-- AnyCPU: the ASCOM LocalServer is out of process, so late-bound COM works from 32 and 64 bit -->
+    <Platforms>AnyCPU</Platforms>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyName>AstroUniBoard.DebugApp</AssemblyName>
+    <RootNamespace>AstroUniBoard.DebugApp</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.1.0</Version>
+    <Description>AstroUniBoard control and debug app: live status, jog, settings, raw console, StallGuard, IMU calibration, environment, log, DFU update.</Description>
+    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- all part of .NET Framework 4.8: nothing extra for the installer to ship -->
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AstroUniBoard.Core\AstroUniBoard.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AstroUniBoard.DebugApp.Tests" />
+  </ItemGroup>
+</Project>
