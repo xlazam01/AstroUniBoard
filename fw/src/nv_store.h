@@ -23,7 +23,7 @@ struct SavedPositions {
     bool    focValid;       // a position was saved and no focuser move was cut by a power loss
     int32_t focPos;         // steps (last saved value, also when !focValid)
     uint16_t focUsteps;     // microstep setting focPos is counted in; 0 = unknown (older slot)
-    bool    rotValid;
+    bool    rotValid;       // saved, no move cut by a power loss, not saved as suspect (#75)
     int32_t rotCdeg;        // signed mechanical angle
 };
 
@@ -35,7 +35,7 @@ FwError nvSaveSettings();               // ":23#": FW_OK or FW_ERR_EEPROM
 void nvLoadPositions(SavedPositions& out);
 void nvMarkMoving(AxisId axis);         // just before a move starts: a power loss now leaves the position unverified
 // After the axis has been idle POSITION_SAVE_DELAY_MS. verified = false keeps the position marked
-// unverified across a reboot (focuser after a stall or before the first sync).
+// unverified across a reboot (focuser after a stall or before the first sync; rotator: suspect, #75).
 void nvSavePosition(AxisId axis, int32_t value, bool verified = true);
 
 bool    nvLoadImuCal(ImuCalibration& out);   // false: none stored

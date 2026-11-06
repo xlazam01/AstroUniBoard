@@ -41,7 +41,10 @@ struct RotatorSettings {
 
 enum EnvSelect : uint8_t { ENV_SEL_AUTO = 0, ENV_SEL_ONBOARD = 1, ENV_SEL_EXTERNAL = 2 };
 
-#define SETTINGS_VERSION 1
+// 2: + rotGuard (#75). Version 1 records are 76 bytes; their last two bytes are struct padding (0),
+// so the new field starts after them and keeps its default when a version 1 record is loaded.
+#define SETTINGS_VERSION 2
+#define SETTINGS_V1_SIZE 76
 
 struct Settings {
     DriverConfig    drv[AXIS_COUNT];
@@ -49,7 +52,13 @@ struct Settings {
     RotatorSettings rot;
     uint8_t         envSelect;       // EnvSelect (:92 / :93)
     uint8_t         ledBrightness;   // 0..100 % (:43 / :44)
+    uint8_t         padV1[2];        // padding of the version 1 layout: never use (old records hold 0 here)
+    uint8_t         rotGuard;        // 0 / 1: refuse rotator moves while the angle is suspect (#75, :97 / :98)
 };
+
+#include <stddef.h>
+static_assert(offsetof(Settings, padV1) + 2 == SETTINGS_V1_SIZE, "version 1 layout changed");
+static_assert(offsetof(Settings, rotGuard) >= SETTINGS_V1_SIZE, "new fields go after the version 1 record");
 
 extern Settings settings;            // the running values (defined in settings.cpp)
 

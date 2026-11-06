@@ -23,7 +23,8 @@ enum StatusFlag : uint16_t {
     FLAG_SHT_EXTERNAL   = 1u << 5,   // external SHT31 (J9) has a valid reading
     FLAG_IMU_OK         = 1u << 6,   // IMU answering
     FLAG_IMU_UNCAL      = 1u << 7,   // IMU zero not calibrated
-    FLAG_SAFE_MODE      = 1u << 8    // started after a watchdog reset with sensors disabled
+    FLAG_SAFE_MODE      = 1u << 8,   // started after a watchdog reset with sensors disabled
+    FLAG_ROT_SUSPECT    = 1u << 9    // rotator angle known untrustworthy (#75): moves refused while the :98 guard is on
 };
 
 struct DeviceStatus {

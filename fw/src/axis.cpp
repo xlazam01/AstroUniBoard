@@ -139,6 +139,7 @@ uint32_t Axis::speedNow() const {
     return d ? STEP_TIMER_HZ / d : 0;
 }
 uint32_t Axis::moveStartMs() const { return startMs; }
+uint32_t Axis::leadLeft() const { return lead; }
 bool Axis::justStopped() {
     noInterrupts();
     bool f = stoppedFlag;

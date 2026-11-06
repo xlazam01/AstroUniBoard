@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include "clock_config.h"
+#include "config.h"
 #include "housekeeping.h"
 #include "status.h"
 #include "tmc2209.h"
@@ -16,6 +17,26 @@ static const uint32_t CAL_VDDA_MV = 3000;   // VREFINT_CAL / TS_CAL are taken at
 static int16_t  mcuTemp = 0;
 static uint16_t vdda = 0;
 static uint32_t lastSample = 0;
+static bool     v12Low = false;
+
+#if HW_REV >= 21
+// +12 V in mV from PB10 (8 conversions, scaled by the measured VDDA)
+static uint32_t v12Mv() {
+    uint32_t raw = 0;
+    for (uint8_t i = 0; i < 8; i++) raw += analogRead(PIN_V12_SENSE);
+    const uint32_t va = vdda ? vdda : 3300;
+    return raw * va / 8 / 4095 * V12_DIVIDER;
+}
+#endif
+
+bool hkMotorSupplyOk() {
+#if HW_REV >= 21
+    v12Low = v12Mv() < V12_MIN_MV;
+    return !v12Low;
+#else
+    return true;
+#endif
+}
 
 static void sampleAll() {
     // 16 conversions of each internal channel (single readings jitter by about +-1 %)
@@ -34,6 +55,7 @@ static void sampleAll() {
         mcuTemp = (int16_t)((ts - cal1) * (TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP) * 10 / (cal2 - cal1) +
                             TEMPSENSOR_CAL1_TEMP * 10);
     }
+    (void)hkMotorSupplyOk();   // refreshes the +12 V warning (rev 2.1)
 }
 
 void hkBegin() {
@@ -55,5 +77,5 @@ uint16_t hkVddaMv() { return vdda; }
 
 uint8_t hkWarnings() {
     return (uint8_t)((tmcWarnings() & (HK_WARN_DRV_OTPW | HK_WARN_DRV_RESET)) |
-                     (clockFromCrystal() ? 0 : HK_WARN_NO_CRYSTAL));
+                     (clockFromCrystal() ? 0 : HK_WARN_NO_CRYSTAL) | (v12Low ? HK_WARN_V12_LOW : 0));
 }

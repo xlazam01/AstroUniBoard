@@ -28,4 +28,5 @@ void settingsDefaults(Settings& s) {
 
     s.envSelect = ENV_SEL_AUTO;
     s.ledBrightness = 100;
+    s.rotGuard = 1;
 }

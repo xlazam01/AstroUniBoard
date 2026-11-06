@@ -18,18 +18,20 @@ the tests.
 | Framing | `:NN…#`, bytes outside ignored, `:` restarts, > 46 characters → `ERR,11`, `protoSplit` / strict integers as the firmware |
 | Identify gate | `ERR,16` for everything but `:25#` / `:32#` until `:32#`; locks again on every port open and after every reset |
 | Common 20–49 | ping, identify (`ASTROUNIBOARD,REV2,FW2.0.0,2,<serial>,F`), status, sticky error, housekeeping, StallGuard, LED, reset info, driver config with microstep rescale, `:23#` save, `:24#` defaults |
-| Focuser 50–69 | trapezoid moves at the set speed/acceleration, halt (state 5, decelerates), backlash take-up on a direction change (not counted), soft limits, sync, reverse, step size, position saved 2 s after a stop |
-| Rotator 70–89 | signed mechanical angle, cable-wrap planner, relative moves, sync, halt, IMU home (`:77`), boot home, steps per degree |
+| Focuser 50–69 | trapezoid moves at the set speed/acceleration, halt (state 5, decelerates), backlash take-up on a direction change (not counted; a halt inside it keeps the old direction), soft limits, sync, reverse, step size, position saved 2 s after a stop |
+| Rotator 70–89 | signed mechanical angle, cable-wrap planner, relative moves, sync, halt, IMU home (`:77`), boot home, steps per degree, driver check (`ERR,5`), suspect angle (flag 9) with the move guard `:97` / `:98` (`ERR,17`) |
+| Safe mode | watchdog reset: defaults, positions 0, EEPROM not used; absolute moves `ERR,17`, jogs up to ±200 steps / ±10° until a sync |
 | Environment / IMU 90–99 | two SHT31s drifting slowly (2 h sine, ±1.5 °C, on-board 3.5 °C warmer), dew point (Magnus as the firmware), sensor selection, IMU roll/tilt from a simple camera model, three-capture calibration (`:95`, ~35 s) |
 | EEPROM | position "moving" mark and 2 s idle save, settings record, IMU calibration; a reset within 2 s of a stop leaves the position unverified, as on the board |
-| `:22#` / `:31#` | `OK#`, then the device drops off the link 50 ms later; back after `--reboot-s` (reset flags `14`), DFU stays away until `replug` or `--dfu-return-s` |
+| `:22#` / `:31#` | `ERR,8` while busy; else `OK#`, then the device drops off the link 50 ms later; back after `--reboot-s` (reset flags `14`), DFU stays away until `replug` or `--dfu-return-s` |
 
 Not modelled: step pulses, TMC registers other than SG_RESULT and the temperature class, I2C errors,
 LEDs, IMU noise (homing converges in one pass).
 
 Start state (unless `--fresh`): a used board with the focuser saved at 4000 (verified), rotator at 0°
 (unverified, as after every boot), IMU calibrated, the camera physically 12.34° away from the IMU zero
-(so `:77#` really moves). `--fresh` is a blank EEPROM: defaults, focuser 0 unverified, IMU uncalibrated.
+(so `:77#` really moves). `--fresh` is a blank EEPROM: defaults, focuser 0 unverified, IMU uncalibrated,
+rotator angle never saved (flag 9: send `:76,0#` before rotator moves or `:95`).
 
 ## Running it
 

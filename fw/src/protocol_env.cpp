@@ -12,7 +12,7 @@ void protocolEnv(uint8_t cmd, char* params) {
     if (!protoSplit(params, a)) { protoError(FW_ERR_BAD_PARAM); return; }
 
     // Every command here except :93 takes no parameter.
-    if (cmd >= 90 && cmd <= 96 && cmd != 93 && a.n != 0) { protoError(FW_ERR_BAD_PARAM); return; }
+    if (cmd >= 90 && cmd <= 97 && cmd != 93 && a.n != 0) { protoError(FW_ERR_BAD_PARAM); return; }
 
     switch (cmd) {
         case 90: {  // W,<src>,<t>,<rh>,<dew>#  src 1 on-board, 2 external
@@ -74,7 +74,19 @@ void protocolEnv(uint8_t cmd, char* params) {
             break;
         }
 
-        default:    // 97-99 reserved
+        case 97:    // rotator move guard (#75): 1 = refuse rotator moves while the angle is suspect (flag 9)
+            protoInt(settings.rotGuard ? 1 : 0);
+            break;
+
+        case 98: {  // set the rotator move guard 0 / 1 (running value; :23# saves it)
+            int32_t v;
+            if (a.n != 1 || !protoInt32(a.v[0], v) || v < 0 || v > 1) { protoError(FW_ERR_BAD_PARAM); break; }
+            settings.rotGuard = (uint8_t)v;
+            protoOk();
+            break;
+        }
+
+        default:    // 99 reserved
             protoError(FW_ERR_UNKNOWN_CMD);
             break;
     }

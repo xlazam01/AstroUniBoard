@@ -1,8 +1,9 @@
 """Device model against docs/PROTOCOL.md and fw/src, with simulated time (no sleeping)."""
 import pytest
 
-from astrouniboard_sim.device import (Config, Device, F_EEPROM_FAULT, F_FOC_UNVERIFIED, F_IMU_UNCAL, F_ROT_UNVERIFIED,
-                                      F_SHT_EXTERNAL, F_SHT_ONBOARD, wrap_plan_target)
+from astrouniboard_sim.device import (Config, Device, F_EEPROM_FAULT, F_FOC_UNVERIFIED, F_IMU_UNCAL, F_ROT_SUSPECT,
+                                      F_ROT_UNVERIFIED, F_SAFE_MODE, F_SHT_EXTERNAL, F_SHT_ONBOARD, move_guard,
+                                      wrap_plan_target)
 from astrouniboard_sim.server import Framer
 
 
@@ -77,7 +78,7 @@ def test_framing():
 def test_bad_format_and_unknown(dev):
     assert dev.q("9") == "ERR,11#"
     assert dev.q("ab") == "ERR,11#"
-    for c in ("00", "19", "20", "21", "26", "35", "45", "49", "57", "68", "97", "99"):
+    for c in ("00", "19", "20", "21", "26", "35", "45", "49", "57", "68", "99"):
         assert dev.q(c) == "ERR,10#", c
 
 
@@ -102,7 +103,8 @@ def test_status_flags(dev):
 def test_fresh_board():
     d = Dev(fresh=True)
     st = d.status()
-    assert st[1] == 0 and st[6] & F_FOC_UNVERIFIED and st[6] & F_IMU_UNCAL
+    assert st[1] == 0 and st[6] & F_FOC_UNVERIFIED and st[6] & F_IMU_UNCAL and st[6] & F_ROT_SUSPECT
+    assert d.q("72,100") == "ERR,17#"      # rotator angle never saved (#75)
     assert d.q("96") == "C,0,0,0,0,0,0,0,0,0,0#"
 
 
@@ -338,6 +340,8 @@ def test_imu_home_errors():
 def test_imu_calibration():
     d = Dev(fresh=True)
     assert d.q("94").startswith("I,-99999,-99999,")
+    assert d.q("95") == "ERR,17#"                                  # angle never saved: sync first (#75)
+    assert d.q("76,0") == "OK#"
     assert d.q("95") == "OK#"
     d.wait(1.0)
     assert d.status()[0] == 4 and d.status()[4] == 9000
@@ -359,6 +363,7 @@ def test_imu_calibration_failures():
     d.wait_idle()
     assert d.status()[5] == 3 and d.status()[6] & F_IMU_UNCAL
     d = Dev(fresh=True, altitude_deg=85)                           # vertical, no calibration yet
+    d.q("76,0")
     d.q("95")
     d.wait_idle()
     assert d.status()[5] == 3
@@ -433,3 +438,149 @@ def test_reboot_and_dfu_requests(dev):
     assert dev.q("22") == "OK#" and dev.d.take_pending_reset() == "reboot"
     assert dev.q("31") == "OK#" and dev.d.take_pending_reset() == "dfu"
     assert dev.d.take_pending_reset() is None
+
+
+# ------------------------------------------------------------------ safety (#74 - #77)
+def test_move_guard_rules():
+    assert move_guard(False, False, True, True, 0, 1000) == 0
+    assert move_guard(False, True, True, False, 1, 1000) == 17
+    assert move_guard(False, True, False, True, 0, 1000) == 0
+    assert move_guard(True, True, False, True, 0, 1000) == 17
+    assert move_guard(True, True, True, False, -1000, 1000) == 0
+    assert move_guard(True, True, True, False, 1001, 1000) == 17
+
+
+def test_rotator_driver_not_answering(dev):
+    """#74: a short move with a dead driver is refused, the angle does not change."""
+    dev.d.drv_temp[1] = -1
+    assert dev.q("72,100") == "ERR,5#"
+    assert dev.status()[5] == 5 and dev.q("70") == "0#"
+    dev.q("34,0")
+    assert dev.q("77") == "ERR,5#"                                 # IMU home checks it up front
+    assert dev.q("95") == "ERR,5#"
+    assert dev.status()[0] == 1
+
+
+def test_rotator_power_loss_mid_move_refused_until_sync():
+    """#75: power loss mid-move -> reboot -> :71 refused until :76 sync or :77 home."""
+    d = Dev()
+    assert d.q("71,9000") == "OK#"
+    d.wait(0.5)
+    d.d.power_cycle(d.t)
+    d.q("32")
+    st = d.status()
+    assert st[6] & F_ROT_SUSPECT and st[6] & F_ROT_UNVERIFIED
+    assert d.q("71,1000") == "ERR,17#" and d.q("72,100") == "ERR,17#"
+    assert d.q("97") == "1#"
+    assert d.q("77") == "OK#"                                      # IMU home is allowed and clears it
+    d.wait_idle()
+    assert not d.status()[6] & F_ROT_SUSPECT
+    assert d.q("72,100") == "OK#"
+
+
+def test_rotator_sync_clears_suspect_and_survives_reboot():
+    d = Dev()
+    d.q("71,9000")
+    d.wait(0.5)
+    d.d.power_cycle(d.t)
+    d.q("32")
+    d.reboot()                                                     # suspect stays across reboots
+    assert d.status()[6] & F_ROT_SUSPECT
+    assert d.q("76,4500") == "OK#"
+    d.wait(2.1)
+    d.reboot()
+    st = d.status()
+    assert not st[6] & F_ROT_SUSPECT and st[6] & F_ROT_UNVERIFIED  # flag 1 is set at every boot
+    assert d.q("71,9000") == "OK#"
+
+
+def test_rotator_clean_boot_moves():
+    d = Dev()
+    d.q("72,500")
+    d.wait_idle()
+    d.wait(2.1)
+    d.reboot()
+    assert not d.status()[6] & F_ROT_SUSPECT
+    assert d.q("72,500") == "OK#"
+
+
+def test_rotator_guard_off_and_saved():
+    d = Dev()
+    d.q("71,9000")
+    d.wait(0.5)
+    d.d.power_cycle(d.t)
+    d.q("32")
+    assert d.q("98,2") == "ERR,7#" and d.q("97,1") == "ERR,7#"
+    assert d.q("98,0") == "OK#" and d.q("97") == "0#"
+    assert d.q("72,100") == "OK#"                                  # guard off: allowed, flag 9 still shown
+    d.wait_idle()
+    assert d.status()[6] & F_ROT_SUSPECT
+    d.q("23")
+    d.reboot()
+    assert d.q("97") == "0#"
+
+
+def test_rotator_stall_makes_suspect(dev):
+    dev.d.blocked[1] = True
+    dev.q("42,R,20")
+    dev.q("83,0")
+    dev.q("79,3600")                                               # fast enough for StallGuard
+    dev.q("71,18000")
+    dev.wait_idle()
+    st = dev.status()
+    assert st[5] == 13 and st[6] & F_ROT_SUSPECT
+    assert dev.q("72,100") == "ERR,17#"
+
+
+def test_safe_mode_blocks_absolute_moves():
+    """#77: safe mode refuses absolute moves, allows small jogs, and :56 / :76 sync lifts it."""
+    d = Dev()
+    d.d.reboot(d.t, watchdog=True)
+    d.q("32")
+    st = d.status()
+    assert st[6] & F_SAFE_MODE and st[6] & F_EEPROM_FAULT and st[1] == 0
+    assert d.q("51,100") == "ERR,17#" and d.q("71,100") == "ERR,17#"
+    assert d.q("52,201") == "ERR,17#" and d.q("52,200") == "OK#"
+    d.wait_idle()
+    assert d.q("72,1001") == "ERR,17#" and d.q("72,-1000") == "OK#"
+    d.wait_idle()
+    assert d.q("50") == "200#" and d.q("70") == "-1000#"
+    assert d.q("56,4000") == "OK#" and d.q("51,4500") == "OK#"     # synced: normal moves
+    d.wait_idle()
+    assert d.q("76,0") == "OK#" and d.q("71,9000") == "OK#"
+    d.wait_idle()
+    assert d.q("23") == "ERR,4#"                                   # EEPROM not used in safe mode
+
+
+def test_backlash_halt_inside_takeup_keeps_direction(dev):
+    """#77: a halt during the take-up must not count the new direction as taken up."""
+    dev.q("63,2000")
+    dev.q("51,4500")                     # up: first move, no take-up
+    dev.wait_idle()
+    assert dev.q("51,4400") == "OK#"     # down: 2000 lead steps first
+    dev.wait(0.3)
+    dev.q("53")
+    dev.wait_idle()
+    assert dev.q("50") == "4500#"        # halted inside the take-up: not counted
+    assert dev.d.foc_last_dir == 1
+    t0 = dev.t
+    dev.q("51,4400")                     # down again: the take-up runs again
+    dev.wait_idle()
+    with_lead = dev.t - t0
+    t0 = dev.t
+    dev.q("51,4300")                     # down, same direction: no take-up
+    dev.wait_idle()
+    assert with_lead > (dev.t - t0) + 1.0
+
+
+def test_reboot_refused_while_busy(dev):
+    """#76: :22# / :31# answer ERR,8 while an axis is busy; the host halts first."""
+    dev.q("51,8000")
+    assert dev.q("22") == "ERR,8#" and dev.q("31") == "ERR,8#"
+    assert dev.d.take_pending_reset() is None
+    dev.wait(0.5)
+    dev.q("30")
+    assert dev.q("22") == "ERR,8#"       # still decelerating
+    dev.wait_idle()
+    assert dev.q("31") == "OK#" and dev.d.take_pending_reset() == "dfu"
+    assert dev.q("22,1") == "ERR,7#"

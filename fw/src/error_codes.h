@@ -23,5 +23,7 @@ enum FwError : uint8_t {
     FW_ERR_MOTOR_STALL     = 13,  // sticky: StallGuard stopped a move
     FW_ERR_SENSOR          = 14,  // sensor missing or giving bad data (no valid reading)
     FW_ERR_IMU_VERTICAL    = 15,  // optical axis too close to vertical: roll undefined
-    FW_ERR_NOT_IDENTIFIED  = 16   // no ":32#" since power-on or since the host opened the port (same in OpenWheel)
+    FW_ERR_NOT_IDENTIFIED  = 16,  // no ":32#" since power-on or since the host opened the port (same in OpenWheel)
+    // AstroUniBoard only (keep 17 reserved in OpenWheel):
+    FW_ERR_POS_UNVERIFIED  = 17   // move refused: position not trustworthy, sync (:56 / :76) or IMU home (:77) first (#75, #77)
 };
