@@ -1,0 +1,106 @@
+name: Build firmware
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: fw (V2, rev2)
+            dir: fw
+            env: rev2
+            artifact: astrouniboard-fw-rev2
+          - name: fw-onstepx (V1)
+            dir: fw-onstepx
+            env: nucleo_g0b1re
+            artifact: astrouniboard-fw-onstepx
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-${{ matrix.dir }}-${{ hashFiles(format('{0}/platformio.ini', matrix.dir)) }}
+          restore-keys: pio-${{ matrix.dir }}-
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build
+        working-directory: ${{ matrix.dir }}
+        run: pio run -e ${{ matrix.env }} 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+
+      - name: Size report
+        working-directory: ${{ matrix.dir }}
+        run: |
+          ram=$(grep -E '^RAM:' build.log | tail -1)
+          flash=$(grep -E '^Flash:' build.log | tail -1)
+          pct=$(echo "$flash" | sed -nE 's/.* ([0-9]+\.[0-9]+)% .*/\1/p')
+          {
+            echo "### ${{ matrix.name }} — \`${{ matrix.env }}\`"
+            echo
+            echo '```'
+            echo "$ram"
+            echo "$flash"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$pct" ] && awk "BEGIN{exit !($pct > 90)}"; then
+            echo "::warning title=Flash budget::${{ matrix.dir }} uses ${pct}% of flash (>90%)"
+            echo "> ⚠️ Flash use above 90 %" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.dir }}/.pio/build/${{ matrix.env }}/firmware.bin
+            ${{ matrix.dir }}/.pio/build/${{ matrix.env }}/firmware.elf
+          if-no-files-found: error
+
+  native-tests:
+    name: fw host unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-native-${{ hashFiles('fw/platformio.ini') }}
+          restore-keys: pio-native-
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Run tests
+        working-directory: fw
+        run: pio test -e native
