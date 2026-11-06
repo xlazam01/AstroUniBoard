@@ -80,6 +80,11 @@ their `%LOCALAPPDATA%` is redirected, so register from your own terminal.
 | `Move(rel)` | relative to the current sky position (or the running target), any finite amount, result modulo 360 |
 | `TargetPosition` | the sky target of the last move (current position before the first one) |
 | `Halt` | `:73` |
+
+N.I.N.A. (3.x) does not call `Sync`: it keeps its own sky angle from each plate solve and moves with
+`MoveMechanical`. With N.I.N.A. the driver's offset stays 0 and `Position` equals `MechanicalPosition`.
+If Center and Rotate oscillates and ends with "Failed to find rotation after 10 attempts", the rotator
+turns against the sky: flip `Reverse` (stored in the board), in one place only.
 | `CanReverse`, `Reverse` | true; `:82` / `:83`. Setting Reverse also saves (`:23#`) because ASCOM expects it to persist |
 | `StepSize` | 1000 / steps-per-1000° (`:84`), degrees |
 | `DeviceState` | IsMoving, MechanicalPosition, Position, TimeStamp |
@@ -189,11 +194,11 @@ One dialog for all three devices (the same one from NINA's setup button of any o
 - **Board**: the 1209:0001 candidates by USB serial; **Identify** asks every board not in use for its
   `:32#` identity. Manual COM port as a fallback. A changed choice takes effect when all clients
   have disconnected.
-- **Live status**: positions, sky/mechanical angle, environment, MCU and supply, IMU, error.
+- **Live status**: positions, mechanical angle (the ASCOM sky angle only when a Sync offset is set), environment, MCU and supply, IMU, error.
 - **Focuser** and **Rotator** board settings (max, speed, acceleration, backlash, step size,
   reverse; speed, acceleration, steps per degree, cable wrap, home tolerance, reverse, boot home).
   **Write to board** sends only the changed values, then `:23#`.
-- **This PC**: rotator sky offset; temperature-compensation coefficient and threshold.
+- **This PC**: rotator ASCOM Sync offset, read-only with **Reset to 0** (set only by `Sync`); temperature-compensation coefficient and threshold.
 - Halt all and Clear error buttons.
 - **IMU calibration / debug app...** starts `AstroUniBoard.DebugApp.exe --connect --tab imu` from the
   server exe's folder, where the installer (#46) puts it, and does not wait for it. The app

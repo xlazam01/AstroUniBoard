@@ -1,11 +1,11 @@
 ; Inno Setup script for the AstroUniBoard ASCOM driver and the control & debug app.
-; Build:  ISCC.exe AstroUniBoard.iss  [/DAppVersion=0.2.0]
+; Build:  ISCC.exe AstroUniBoard.iss  [/DAppVersion=0.2.1]
 ;   after: dotnet build ..\AstroUniBoard.Ascom -c Release  and  dotnet build ..\AstroUniBoard.DebugApp -c Release
 ; The installer needs administrator rights (it registers a COM server for all users).
 
 #define AppName "AstroUniBoard ASCOM Driver"
 #ifndef AppVersion
-  #define AppVersion "0.2.0"
+  #define AppVersion "0.2.1"
 #endif
 #define ServerExe "AstroUniBoard.Ascom.Server.exe"
 #define DebugExe "AstroUniBoard.DebugApp.exe"
