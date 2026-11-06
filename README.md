@@ -52,7 +52,7 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **Switched sensor supply** | PB9 → R32 → SHT31 VDD and ADDR | The firmware can power-cycle a stuck sensor. Tying ADDR to the same pin moves the on-board sensor to 0x45, so an **external SHT31 on J9** (0x44) fits on the same bus, for example on the dew shield |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
-| **Power path** | XT30 J6 (SMAJ15A TVS D24 across it, rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. There is no reverse-polarity protection: rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
+| **Power path** | XT30 J6 → F1 2 A polyfuse → D24 SMF15A TVS (rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. F1 trips on a short or overload behind it and resets when cooled. There is no reverse-polarity FET: a reversed supply drives D24 forward until F1 trips, which may cost D24. Rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
 | **12 V sense** (rev 2.1) | R33/R34 divider on PB10 | The firmware can see that motor power is missing or low before a move, instead of finding out from a driver that stops answering |
 | **Motor supply jumper** | JP4, one 3-pad solder jumper `12V – Vdrive – 5V`, 12 V side bridged | 5 V motors can be used from USB power for light loads. One middle pad means only one source can be selected (rev 2.0 had two separate jumpers that could short 12 V onto 5 V), see [Assembly](#4-solder-jumper-jp4) |
 | **Status LEDs** | D1 status (PB12), D2 activity (PB4), D3 = 12 V present, D4 = 5 V present | You can see power, motion and errors without a PC. The brightness is adjustable and the LEDs are dim, because the board sits next to a camera |
@@ -97,7 +97,7 @@ These options were weighed during the design, with the reason for each decision.
 | J2 | top edge | USB-C **to the PC** (upstream, board + hub) | — |
 | J7 | top edge | USB-C **to the camera** (downstream, hub port) | — |
 | J5 | top edge, horizontal | **Rotator motor**, JST-PH 4 (S4B-PH-K) | 1 B2, 2 B1, 3 A1, 4 A2 |
-| J6 | **bottom** edge, under J5 | **12 V in**, XT30PW-M (male pins on the board), TVS D24 next to it | `+` / `−` marked on the bottom silkscreen. **Not reverse-polarity protected** |
+| J6 | **bottom** edge, under J5 | **12 V in**, XT30PW-M (male pins on the board); F1 polyfuse and TVS D24 on top next to its pins | `+` / `−` marked on the bottom silkscreen. **Not reverse-polarity protected** |
 | J3 | pads, DNP | Focuser motor (solder wires or a vertical JST-PH 4) | 1 B2 (G), 2 B1 (BK), 3 A1 (R), 4 A2 (BL): colours on the bottom silkscreen |
 | J4 | pads, DNP | Hall / index input | 1 3V3, 2 GND, 3 HALL |
 | J8 | pads, DNP | AUX GPIO | 1 3V3, 2 AUX1 (X1), 3 AUX2 (X2), 4 GND |
@@ -129,7 +129,8 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | Y2 | 1 | 12 MHz crystal (TAXM12M4RDBCCT2T) | 3225 | C164041 |
 | L4 | 1 | 10 µH (IHLP2020BZER100M11) | IHLP-2020 | C844984 |
 | D23 | 1 | SS34 Schottky | SMA | C8678 |
-| D24 | 1 | SMAJ15A TVS (12 V input) | SMA, **bottom** | C86819 |
+| D24 | 1 | SMF15A TVS (12 V input) | SOD-123FL | C123802 |
+| F1 | 1 | Polyfuse 2 A hold / 3.5 A trip, 16 V (Ruilon SMD1206P200TF/16) | 1206 | C55125664 |
 | D1–D4 | 4 | LED red | 0402 | C130719 |
 | J2, J7 | 2 | USB-C receptacle (G-Switch GT-USB-7010ASV) | THT/SMD | C2988369 |
 | J5 | 1 | JST S4B-PH-K, horizontal | THT | C265452 |
@@ -168,9 +169,8 @@ Notes before ordering:
 
 - **U5 STM32G0B1CBT6 had no JLC stock** on 2026-11-06. Use global sourcing or a consigned part, or the
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
-- 17 Basic, 3 Preferred and 23 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
-- D24 is the only SMD part on the **bottom** side, so the order needs JLC's two-sided assembly (or fit D24 by hand:
-  SMA, cathode band towards the XT30).
+- 17 Basic, 3 Preferred and 24 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
+- All SMD parts are on the top side (single-sided assembly).
 - Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the `hw-rev2.x` GitHub release,
   or generate them yourself as described in [docs/HARDWARE.md](docs/HARDWARE.md#production-files).
 
@@ -205,7 +205,11 @@ Do it in this order:
 4. **XT30 J6 on the bottom** with the opening towards the board edge. It has to sit flat on the board. If it rocks,
    a J5 pin is still too long. Solder the two power pins and the two mounting legs **from the top**. The legs sit right
    next to J5's housing: use a fine tip and do not melt the JST plastic.
-5. Check polarity against the `+` / `−` marks on the bottom silkscreen, and that the XT30 pins are not
+5. **Mind F1 and D24 on top next to the XT30 pins.** F1's pad touches the `+` pad on purpose (that overlap is the
+   connection), so F1 reflows while you solder the `+` pin: keep the iron short and check F1 is still seated.
+   D24's GND pad is only 0.15 mm from the `+` pad: use little solder and check under a loupe that the `+` joint
+   does not bridge to D24. A bridge shorts 12 V to GND (F1 then trips).
+6. Check polarity against the `+` / `−` marks on the bottom silkscreen, and that the XT30 pins are not
    shorted to each other (> 1 kΩ between `+` and `−`; it starts low and rises while the capacitors charge).
 
 If JLC fitted J5 for you, start at step 2. The bottom silkscreen says `J5 FIRST` next to the XT30 as a reminder.

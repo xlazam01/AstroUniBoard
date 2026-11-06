@@ -27,10 +27,15 @@ Rev 2.1 changes:
   +12 V pad above the XT30 `+` pin, the +5 V pad on the +5 V row. C56 moved 2.3 mm right to make room.
   The rest of the board's +12 V copper is now fed from the XT30 `+` pin over B.Cu and two vias onto the +12 V row
   (it used to go through JP5's pad).
-- **D24 SMAJ15A TVS across J6** (C86819; 15 V standoff, 24.4 V clamp at 16.4 A, #71). It clamps the plug-in
-  transient of a long cable on ~300 µF of ceramic input capacitance below the TMC2209 VS limit (29 V). It is on the
-  **bottom** side between the GND via rows above the XT30, cathode towards the `+` pin: the top has no room.
-  No reverse-polarity FET, fuse or bulk capacitor (owner's choice): a reversed supply is not caught by hardware.
+- **12 V input protection (#71): F1 polyfuse + D24 TVS**, both on the top next to the XT30 pins (top-side assembly
+  only). J6 `+` → net `VIN` → **F1** Ruilon SMD1206P200TF/16 (C55125664; 2 A hold, 3.5 A trip, 16 V, 35 A max,
+  15 mΩ) → `+12V`. **D24** SMF15A (C123802, SOD-123FL; 15 V standoff, 24.4 V clamp, 200 W) after the fuse, across
+  `+12V`/GND. D24 clamps the plug-in transient of a long cable on ~300 µF of ceramic input capacitance below the
+  TMC2209 VS limit (29 V); F1 opens on a short or overload behind it and resets. A reversed supply drives D24 forward
+  until F1 trips (seconds), which may destroy D24; no reverse FET, no bulk capacitor (owner's choice).
+  Layout notes (accepted): F1 pad 1 connects to the XT30 `+` pad by pad overlap, not a track; D24's GND pad is
+  0.15 mm from the `+` pad (hand-soldering warning in the README); the two +12V vias to the B.Cu feed sit in JP4's
+  12 V pad (JP4 is not expected to be changed).
 - **J5 / XT30 stacking (#69) stays** — the bottom edge is full (USB-C, J5, USB-C), and an SMD JST does not clear the
   XT30's plated peg holes and power pins. Bottom silkscreen `J5 FIRST` next to the XT30; assembly order in the README.
 - No SWD pads (#72, owner's choice): recovery is DFU only (`nBOOT_SEL`, see the README firmware section).
@@ -40,8 +45,8 @@ Rev 2.1 changes:
 Every fitted part has an `LCSC` field, in the schematic and on the PCB footprints, so the JLC fabrication
 toolkit fills the BOM without manual matching. Mounting holes H1–H8 are excluded from the BOM and position file.
 Parts were picked JLC Basic first, then Preferred, then Extended; values and numbers follow OpenWheel and the
-UpBox parts list where they overlap. Snapshot 2026-11-06: 17 Basic, 3 Preferred, 23 Extended unique parts.
-D24 (SMAJ15A) is the only SMD part on the bottom, so the order needs two-sided assembly, or D24 is fitted by hand.
+UpBox parts list where they overlap. Snapshot 2026-11-06: 17 Basic, 3 Preferred, 24 Extended unique parts.
+All SMD parts are on the top side.
 
 Value style is `<value>` or `<value>/<voltage>`, for example `100nF`, `100nF/50V`, `10uF/10V`. The voltage is
 in the value wherever the part differs by rating:
@@ -63,7 +68,8 @@ Choices to confirm before ordering:
   would allow C2286 (Basic) and save one Extended fee.
 - **R23 1k78 (C113478) is Extended.** Changing the divider to a Basic E24 value would move VOUT.
 - **D23 = SS34 (C8678, Basic)**, 40 V 3 A Schottky in SMA.
-- **D24 = SMAJ15A (C86819, Extended, ~89k in stock on 2026-11-06)**, 400 W unidirectional TVS in SMA.
+- **D24 = SMF15A (C123802, Extended, ~92k in stock on 2026-11-06)**, 200 W unidirectional TVS in SOD-123FL.
+- **F1 = SMD1206P200TF/16 (C55125664, Extended, ~2.8k in stock on 2026-11-06)**, 2 A / 16 V polyfuse in 1206.
 
 Rev 2.0 is pin-compatible with rev 1 for firmware: every MCU pin has the same function.
 Differences the firmware can see:
