@@ -105,7 +105,6 @@ namespace AstroUniBoard.Ascom
                     c.Add("DewPoint", s.Environment.DewPoint);
                     c.Add("Humidity", s.Environment.Humidity);
                     c.Add("Temperature", s.Environment.Temperature);
-                    c.Add("TimeSinceLastUpdate", Math.Max(0, (DateTime.UtcNow - s.Environment.TimeUtc).TotalSeconds));
                 }
                 c.AddUtcDateTime();
                 return c;
