@@ -149,4 +149,4 @@ python -m pytest -q
 
 `tests/test_device.py` checks the model against the protocol with simulated time;
 `tests/test_server.py` runs the link (TCP everywhere, pty on POSIX), faults, reboot/DFU/unplug and the
-CLI. CI: [.github/workflows/sim.yml](../../.github/workflows/sim.yml) (Python 3.12 on ubuntu — pty and TCP — and on windows — TCP).
+CLI. The tests run on Python 3.12 on Linux (pty and TCP) and Windows (TCP).

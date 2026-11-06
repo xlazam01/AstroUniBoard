@@ -1,3 +1,5 @@
+# private material: a separate repo (Gitea AstroUniBoard-private), like OpenWheel
+/_private/
 # PlatformIO
 fw-onstepx/.pio/
 fw/.pio/
