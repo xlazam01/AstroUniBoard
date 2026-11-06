@@ -131,3 +131,8 @@ void envUpdate() {
 const ShtReading& envReading(EnvSensor s) { return readings[s]; }
 
 uint16_t envPowerCycles() { return powerCycles; }
+
+// STUB — session C (#34) implements the sensor selection.
+int8_t envSelected() {
+    return envReading(ENV_EXTERNAL).status == SHT_OK ? (int8_t)ENV_EXTERNAL : (int8_t)-1;
+}
