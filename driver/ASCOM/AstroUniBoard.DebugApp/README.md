@@ -49,9 +49,13 @@ offer). The STM32 bootloader needs the WinUSB driver once (Zadig).
 ## Command line
 
 ```
-AstroUniBoard.DebugApp.exe [--port COM9] [--connect] [--loopback] [--screenshots <folder>]
+AstroUniBoard.DebugApp.exe [--port COM9] [--connect] [--tab imu] [--loopback] [--screenshots <folder>]
 ```
 
+`--tab` opens on a tab by the first word of its title (`status`, `focuser`, `rotator`, `motors`, `imu`,
+`environment`, `console`, `log`, `firmware`). The driver's Setup dialog starts the app with
+`--connect --tab imu` for the IMU calibration, so the installer must put `AstroUniBoard.DebugApp.exe`
+next to `AstroUniBoard.Ascom.Server.exe`.
 `--screenshots` connects, saves a PNG of every tab and exits (used for the docs).
 
 ## Tests
