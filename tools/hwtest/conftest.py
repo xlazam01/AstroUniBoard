@@ -22,6 +22,7 @@ USB_VID = 0x1209
 USB_PID = 0x0001
 CMD_TIMEOUT = 1.0
 SAVE_TIMEOUT = 2.0      # :23# writes the EEPROM
+READ_POLL_S = 0.05      # serial read timeout, set once before open (never changed while open)
 
 # values the firmware enforces (fw/src/tmc2209.h, protocol_common.cpp)
 TMC_MAX_RUN_MA = 1500
@@ -90,7 +91,7 @@ class Board:
     # --- transport ---
     def open(self):
         s = serial.Serial()
-        s.port, s.baudrate, s.timeout, s.write_timeout = self.port, 115200, CMD_TIMEOUT, 1.0
+        s.port, s.baudrate, s.timeout, s.write_timeout = self.port, 115200, READ_POLL_S, 1.0
         s.dtr = False
         s.open()
         s.reset_input_buffer()
@@ -133,16 +134,17 @@ class Board:
         self.ser.flush()
 
     def raw(self, text, timeout=CMD_TIMEOUT):
-        """Send text, return the reply up to and including '#', or '' on timeout."""
+        """Send text, return the reply up to and including '#', or '' on timeout.
+        Never changes the port settings while open: any reconfiguration (timeout, baud) sends
+        CDC class requests that lock the board again (identify gate, #58)."""
         self.ser.reset_input_buffer()
         self.send(text)
-        self.ser.timeout = timeout
         out = b""
         end = time.time() + timeout
         while time.time() < end:
-            c = self.ser.read(1)
+            c = self.ser.read(1)            # port read timeout is short (READ_POLL_S)
             if not c:
-                break
+                continue
             out += c
             if c == b"#":
                 break

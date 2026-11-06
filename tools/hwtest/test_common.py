@@ -235,3 +235,13 @@ def test_identify_gate_after_reboot(board, idle):
     assert board.cmd(":32#").startswith("ASTROUNIBOARD,")
     assert board.cmd(":33#").startswith("S,")              # unlocked
     assert board.cmd(":99#") == "ERR,10#"
+
+
+def test_identify_gate_on_port_open(board, idle):
+    """#58: opening the port locks the board again; :32# unlocks it."""
+    board.close()
+    board.open()
+    assert board.cmd(":33#") == "ERR,16#"
+    assert board.cmd(":25#") == "OK#"
+    assert board.cmd(":32#").startswith("ASTROUNIBOARD,")
+    assert board.cmd(":33#").startswith("S,")
