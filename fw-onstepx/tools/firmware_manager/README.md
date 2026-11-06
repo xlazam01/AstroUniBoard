@@ -37,7 +37,7 @@ Upload firmware using dfu-util.
 
 **Example:**
 ```python
-upload_firmware("f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo_g0b1re/firmware.bin")
+upload_firmware("f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin")
 ```
 
 ---
@@ -56,7 +56,7 @@ Complete workflow: Send DFU command -> Wait -> Upload firmware.
 ```python
 enter_dfu_and_upload(
     "COM6",
-    "f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo_g0b1re/firmware.bin",
+    "f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin",
     3
 )
 ```
@@ -76,7 +76,7 @@ python tools/firmware_manager/server.py
 ```python
 enter_dfu_and_upload(
     "COM6",
-    "f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo_g0b1re/firmware.bin"
+    "f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin"
 )
 ```
 
@@ -88,7 +88,7 @@ enter_dfu("COM6")
 # Step 2: Wait manually (3 seconds)
 
 # Step 3: Upload
-upload_firmware("f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo_g0b1re/firmware.bin")
+upload_firmware("f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin")
 ```
 
 ---

@@ -1,14 +1,14 @@
 # PlatformIO
-FW/.pio/
+fw-onstepx/.pio/
 
 # VS Code (keep settings.json, ignore generated files)
-FW/.vscode/.browse.c_cpp.db*
-FW/.vscode/c_cpp_properties.json
-FW/.vscode/launch.json
-FW/.vscode/ipch/
+fw-onstepx/.vscode/.browse.c_cpp.db*
+fw-onstepx/.vscode/c_cpp_properties.json
+fw-onstepx/.vscode/launch.json
+fw-onstepx/.vscode/ipch/
 
 # Build artifacts
-FW/buildlog.txt
+fw-onstepx/buildlog.txt
 
 # Python
 __pycache__/
@@ -31,7 +31,7 @@ HW/**/.history_trim/
 
 # Claude Code local settings
 .claude/settings.local.json
-FW/.claude/settings.local.json
+fw-onstepx/.claude/settings.local.json
 
 # OS
 .DS_Store

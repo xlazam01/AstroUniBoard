@@ -139,7 +139,7 @@ PlatformIO CLI is not on PATH. Use the full path:
 ```
 Example build command:
 ```
-"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run -e nucleo_g0b1re -d "f:/Projekty/AstroUniBoard/FW - FocuserRotator"
+"%USERPROFILE%\.platformio\penv\Scripts\pio.exe" run -e nucleo_g0b1re -d "f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx"
 ```
 
 ## Build & Upload Instructions
@@ -157,7 +157,7 @@ Use the Firmware Manager MCP server for automated DFU upload:
    - Waits for device to re-enumerate as DFU
    - Uploads firmware via dfu-util
 3. Firmware binary path: `.pio/build/nucleo_g0b1re/firmware.bin`
-4. Example: `enter_dfu_and_upload("COM6", "f:/Projekty/AstroUniBoard/FW - FocuserRotator/.pio/build/nucleo_g0b1re/firmware.bin")`
+4. Example: `enter_dfu_and_upload("COM6", "f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin")`
 
 Available MCP tools:
 - `list_ports()` - List available COM ports

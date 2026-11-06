@@ -186,7 +186,7 @@ def enter_dfu_and_upload(port: str, firmware_path: str, wait_seconds: int = 3) -
 
 @mcp.tool()
 def build_firmware(
-    project_dir: str = r"f:\Projekty\AstroUniBoard\FW - FocuserRotator",
+    project_dir: str = r"f:\Projekty\Astro\devices\AstroUniBoard\fw-onstepx",
     environment: str = "nucleo_g0b1re",
 ) -> str:
     """Build firmware using PlatformIO.

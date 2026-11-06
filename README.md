@@ -6,7 +6,7 @@ A custom STM32G0B1-based telescope controller board focused on **focuser and rot
 
 ```
 AstroUniBoard/
-├── FW/                     # Firmware (PlatformIO / Arduino / OnStepX)
+├── fw-onstepx/             # Firmware (PlatformIO / Arduino / OnStepX)
 │   ├── src/                # OnStepX source tree + custom config
 │   ├── platformio.ini      # Build configuration
 │   └── tools/              # Firmware manager MCP server (DFU upload)
@@ -63,7 +63,7 @@ Based on **OnStepX** — advanced telescope controller firmware with LX200 proto
 ### Quick start
 
 1. Install [PlatformIO](https://platformio.org/)
-2. Open the `FW/` folder in VS Code
+2. Open the `fw-onstepx/` folder in VS Code
 3. Build: `Ctrl+Alt+B` (environment: `nucleo_g0b1re`)
 4. First upload: put board in DFU via BOOT0 switch, then `Ctrl+Alt+U`
 5. Subsequent uploads: send `:EDFU#` via serial to enter DFU, then upload
@@ -91,18 +91,18 @@ Plus the full [OnStepX LX200 command set](https://groups.io/g/onstep/wiki/OnStep
 
 ### Firmware Manager MCP Server
 
-`FW/tools/firmware_manager/server.py` — MCP server that automates DFU firmware updates from Claude Code or any MCP client.
+`fw-onstepx/tools/firmware_manager/server.py` — MCP server that automates DFU firmware updates from Claude Code or any MCP client.
 
 ```bash
-pip install -r FW/tools/firmware_manager/requirements.txt
-python FW/tools/firmware_manager/server.py
+pip install -r fw-onstepx/tools/firmware_manager/requirements.txt
+python fw-onstepx/tools/firmware_manager/server.py
 ```
 
 Key tool: `enter_dfu_and_upload(port, firmware_path)` — sends `:EDFU#`, waits for re-enumeration, uploads via dfu-util.
 
 ## License
 
-Firmware is licensed under the GPL (inherited from OnStepX). See [FW/src/LICENSE](FW/src/LICENSE).
+Firmware is licensed under the GPL (inherited from OnStepX). See [fw-onstepx/src/LICENSE](fw-onstepx/src/LICENSE).
 
 ## Credits
 

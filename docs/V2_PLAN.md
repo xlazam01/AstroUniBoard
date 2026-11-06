@@ -30,7 +30,7 @@ Non-goals (V2.0): mount control, LX200 compatibility, Alpaca server on the devic
 | OpenWheel `fw/` | protocol parser, error codes, identify/status, housekeeping (VDDA, +5V, die temp, TMC temp), EEPROM record with magic+CRC, DFU jump, LED PWM, TMC2209 init + StallGuard, USB descriptor flags | copy → adapt, or extract to a shared lib **[Q04]** |
 | OpenWheel `driver/ASCOM` | `OpenWheel.Core` (worker thread, framing, circuit breaker, detection by VID/PID + identify, fake device tests), LocalServer, Inno Setup installer, ConformU workflow | same split: `AstroUniBoard.Core` + thin ASCOM layer |
 | OpenWheel `driver/INDI` | serial_link, detect, protocol, simulator, tests, docker build | same split |
-| V1 (this repo) | pinmap (`docs/HARDWARE.md`), MPU-6000 gravity homing idea (commit f313306), rotator angle convention + cable-wrap rules (`FW/TESTPLAN_RotatorHoming.md`), `firmware_manager` MCP | rewrite (OnStepX code is GPL-3 and must not be copied verbatim if the license changes **[Q05]**) |
+| V1 (this repo) | pinmap (`docs/HARDWARE.md`), MPU-6000 gravity homing idea (commit f313306), rotator angle convention + cable-wrap rules (`fw-onstepx/TESTPLAN_RotatorHoming.md`), `firmware_manager` MCP | rewrite (OnStepX code is GPL-3 and must not be copied verbatim if the license changes **[Q05]**) |
 
 ## 3. Firmware architecture (proposal)
 

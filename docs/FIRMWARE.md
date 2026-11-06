@@ -3,17 +3,17 @@
 ## Prerequisites
 
 - [VS Code](https://code.visualstudio.com/) with [PlatformIO extension](https://platformio.org/install/ide?install=vscode)
-- Open the `FW/` folder as the PlatformIO project root
+- Open the `fw-onstepx/` folder as the PlatformIO project root
 
 ## Build
 
-Open `FW/` in VS Code and use PlatformIO:
+Open `fw-onstepx/` in VS Code and use PlatformIO:
 
 - **GUI:** PlatformIO sidebar → `nucleo_g0b1re` environment → Build
 - **Keyboard:** `Ctrl+Alt+B`
 - **CLI:** `pio run -e nucleo_g0b1re`
 
-Build output: `FW/.pio/build/nucleo_g0b1re/firmware.bin`
+Build output: `fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin`
 
 ### Build configuration summary
 
@@ -56,11 +56,11 @@ Board has no `:EDFU#` command, so enter DFU manually:
 
 ### Firmware Manager MCP Server (automated)
 
-`FW/tools/firmware_manager/server.py` provides an MCP server for one-step DFU upload from Claude Code.
+`fw-onstepx/tools/firmware_manager/server.py` provides an MCP server for one-step DFU upload from Claude Code.
 
 ```bash
-pip install -r FW/tools/firmware_manager/requirements.txt
-python FW/tools/firmware_manager/server.py
+pip install -r fw-onstepx/tools/firmware_manager/requirements.txt
+python fw-onstepx/tools/firmware_manager/server.py
 ```
 
 **Recommended:** `enter_dfu_and_upload(port, firmware_path)` — handles the full workflow.
@@ -68,7 +68,7 @@ python FW/tools/firmware_manager/server.py
 ```python
 enter_dfu_and_upload(
     "COM6",
-    "f:/Projekty/AstroUniBoard/FW/.pio/build/nucleo_g0b1re/firmware.bin"
+    "f:/Projekty/Astro/devices/AstroUniBoard/fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin"
 )
 ```
 
@@ -85,7 +85,7 @@ Available tools:
 
 ## Configuration
 
-### Primary: `FW/src/Config.h`
+### Primary: `fw-onstepx/src/Config.h`
 
 ```c
 #define PINMAP          AUB_FOCROT    // Custom board
@@ -98,7 +98,7 @@ Available tools:
 #define AXIS4_DRIVER_MODEL  TMC2209   // Focuser
 ```
 
-### Extended: `FW/src/Extended.config.h`
+### Extended: `fw-onstepx/src/Extended.config.h`
 
 ```c
 #define DEBUG           ON            // Use ON, never VERBOSE
