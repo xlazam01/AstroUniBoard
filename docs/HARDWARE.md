@@ -35,9 +35,9 @@ EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load ca
 
 | Function | Pin | Notes |
 |----------|-----|-------|
-| AXIS3 ENABLE | PB7 | Rotator — active LOW |
-| AXIS3 DIR | PB8 | Rotator |
-| AXIS3 STEP | PB9 | Rotator |
+| AXIS3 ENABLE | PB13 | Rotator — active LOW |
+| AXIS3 DIR | PB14 | Rotator |
+| AXIS3 STEP | PB15 | Rotator |
 | AXIS4 ENABLE | PB0 | Focuser — active LOW |
 | AXIS4 DIR | PB1 | Focuser |
 | AXIS4 STEP | PB2 | Focuser |
@@ -62,8 +62,14 @@ Baud rate: 460800. TMC2209 addresses hardwired via MS1/MS2: AXIS3 = addr 1, AXIS
 
 | Device | Address | Purpose |
 |--------|---------|---------|
-| 24AA64 | 0x50 | 8 KB NV storage (focuser/rotator position, settings) |
-| SHT31 | 0x44 | Temperature + humidity sensor |
+| 24AA64 | 0x50 | 8 KB NV storage (focuser/rotator position, settings). The fw-onstepx pinmap comment says 0x57 — confirm with an I2C bus scan |
+| SHT31 on-board (U8) | 0x45 (rev 2.0), 0x44 (rev 1) | Temperature + humidity, ADDR tied to the PB9 supply |
+| SHT31 external (J9) | 0x44 | Optional, rev 2.0 only |
+| MPU-6000 | 0x68 | IMU (rotator gravity homing) |
+
+| Function | Pin | Notes |
+|----------|-----|-------|
+| SHT_PWR | PB9 | SHT31 supply, active HIGH. On rev 2.0 the on-board sensor answers only while it is on |
 
 ## USB (Native USB CDC)
 

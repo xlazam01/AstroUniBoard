@@ -6,7 +6,8 @@ A custom STM32G0B1-based telescope controller board focused on **focuser and rot
 
 ```
 AstroUniBoard/
-├── fw-onstepx/             # Firmware (PlatformIO / Arduino / OnStepX)
+├── fw/                     # Firmware V2 (in development, HW rev 2.0 only) — docs/V2_PLAN.md
+├── fw-onstepx/             # Firmware V1 (PlatformIO / Arduino / OnStepX)
 │   ├── src/                # OnStepX source tree + custom config
 │   ├── platformio.ini      # Build configuration
 │   └── tools/              # Firmware manager MCP server (DFU upload)
