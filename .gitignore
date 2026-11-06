@@ -52,3 +52,4 @@ driver/ASCOM/dist/
 # .NET build output
 bin/
 obj/
+driver/ASCOM/installer/Output/

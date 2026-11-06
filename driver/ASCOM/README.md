@@ -11,8 +11,11 @@ Copied and adapted from OpenWheel `driver/ASCOM` (decision: copy & adapt, see `d
 | `AstroUniBoard.Ascom` | ASCOM LocalServer `AstroUniBoard.Ascom.Server.exe`: Focuser (IFocuserV4), Rotator (IRotatorV4), ObservingConditions (IObservingConditionsV2) on one port, setup dialog, Action contract for the debug app — see `SPEC.md` |
 | `AstroUniBoard.Ascom.Check` | direct checks of the driver classes against a real board (no registration needed) |
 | `conformance/` | ConformU reports |
+| `installer/` | Inno Setup script: server, debug app and Core in one folder, COM registration, ASCOM Platform 7 check |
 
-Planned next to these: the Inno Setup installer (`docs/V2_PLAN.md` §5).
+Installer: `dotnet build AstroUniBoard.Ascom -c Release`, `dotnet build AstroUniBoard.DebugApp -c Release`, then
+`ISCC.exe installer\AstroUniBoard.iss [/DAppVersion=x.y.z]` → `installer\Output\AstroUniBoard-ASCOM-Setup-x.y.z.exe`.
+Released installers are on the [GitHub releases](https://github.com/xlazam01/AstroUniBoard/releases) page.
 
 ## BoardController in short
 
