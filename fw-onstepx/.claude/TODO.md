@@ -5,7 +5,7 @@
 ### Task 1.1: STM32G0B1 HAL Header
 - [x] Create `src/src/HAL/stm32/STM32G0B1.h`
 - [x] NV driver set to NV_2464 (24AA64 I2C EEPROM)
-- [x] DFU bootloader magic packet support (end of 144KB SRAM)
+- [x] DFU bootloader direct jump `HAL_bootloader_jump()` (no magic packet, no reset)
 - [x] I2C pin config delegated to pinmap (I2C_SDA_PIN/I2C_SCL_PIN)
 
 ### Task 1.2: HAL Detection & Constants
@@ -58,13 +58,14 @@
 
 ---
 
-## PHASE 4: DFU Bootloader Command [PENDING]
+## PHASE 4: DFU Bootloader Command [COMPLETE]
 
 ### Task 4.1: DFU Command Handler
-- [ ] Implement `:BOOTDFU#` command in command processing
-- [ ] Add startup check: call `HAL_bootloader_check()` and jump to system bootloader
-- [ ] Test DFU mode activation via command
-- [ ] Test firmware upload via `dfu-util`
+- [x] `:EDFU#` command in `Telescope.command.cpp` calls `HAL_bootloader_jump()` (direct jump, no magic packet)
+- [x] Test DFU mode activation via command
+- [x] Test firmware upload via `dfu-util`
+
+OnStepX firmware is being deprecated in favour of firmware V2 (`docs/V2_PLAN.md`), so no magic-packet path here.
 
 ---
 
