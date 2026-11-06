@@ -38,14 +38,17 @@ Protocol version reported by identify: **2** (raised on any incompatible change)
 USB VID/PID 1209:0001 is the shared pid.codes test PID (OpenWheel and other devices use it too), so
 the firmware acts on nothing before the host has identified it:
 
-- After power-on or any reset only `:25#` (ping) and `:32#` (identify) are accepted. Every other
-  command answers **`ERR,16`** and does nothing.
-- An answered `:32#` unlocks all commands until the next reset. Opening or closing the port does not
-  lock again: a port open cannot be told apart from a host changing the port settings (both send
-  SET_LINE_CODING, e.g. pyserial on every timeout change; measured 2026-11-06).
+- After power-on or any reset, **and whenever a host opens the port or changes its settings**, only
+  `:25#` (ping) and `:32#` (identify) are accepted. Every other command answers **`ERR,16`** and does
+  nothing. The firmware sees an open as the USB CDC class requests SET_LINE_CODING /
+  SET_CONTROL_LINE_STATE, which Windows sends on open (also with DTR = false), and also on every
+  change of the port settings (timeout, baud, DTR/RTS) — measured 2026-11-06.
+- An answered `:32#` unlocks all commands until the next open, reconfiguration or reset.
 - Hosts must identify every port before sending anything else and check the `ASTROUNIBOARD` prefix
-  and the protocol version. After a reboot they reconnect to the same USB serial number, never to
-  "the first 1209:0001 port".
+  and the protocol version. They **do not change the settings of an open port**; if a command still
+  answers `ERR,16`, they send `:32#` again, check it is the same USB serial number, and repeat the
+  command. After a reboot they reconnect to the same USB serial number, never to "the first
+  1209:0001 port".
 
 Same rule and error number in OpenWheel (xlazam01/OpenWheel#16).
 
@@ -457,7 +460,7 @@ Example:
 ## 5. Typical host sequence
 
 1. Find ports with VID 0x1209 / PID 0x0001 (later the assigned PID).
-2. `:32#` first, before any other command (a device that is not identified answers `ERR,16`) →
+2. `:32#` first after opening the port, before any other command (a device that is not identified answers `ERR,16`) →
    check the `ASTROUNIBOARD` prefix and protocol version; read caps. Remember the USB serial number
    and reconnect only to that one after a reboot.
 3. `:33#` → state, positions, flags. Warn the user on flags 0/1 (unverified position) and 2 (EEPROM).
@@ -487,7 +490,7 @@ different meaning; codes OpenWheel uses for wheel-only faults are left unused he
 | 13 | motor stalled (StallGuard) | sticky fault | |
 | 14 | sensor missing or no valid reading | rejection | SHT31 / IMU query without a valid value |
 | 15 | IMU: optical axis too close to vertical | rejection | `:77` / `:95` near the zenith (roll undefined) |
-| 16 | not identified | rejection | any command but `:25` / `:32` before `:32#` since the last reset |
+| 16 | not identified | rejection | any command but `:25` / `:32` before `:32#` since the last reset or port open |
 
 A sticky fault stops the moving axis, returns state to idle and keeps the code in `:33#` / `:34#`
 until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in the reply.
