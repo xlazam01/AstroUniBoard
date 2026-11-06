@@ -6,6 +6,7 @@
 #include "config.h"
 #include "diag.h"
 #include "env_sht31.h"
+#include "settings.h"
 
 static const uint32_t ENV_PERIOD_MS     = 2000;  // measurement interval
 static const uint32_t MEAS_WAIT_MS      = 20;    // high repeatability: 15.5 ms max
@@ -55,7 +56,12 @@ static bool startMeasurement(uint8_t addr) {
 static void readMeasurement(EnvSensor s) {
     ShtReading& r = readings[s];
     uint8_t buf[6];
-    if (Wire.requestFrom(ADDRS[s], (uint8_t)6) != 6) { r.status = SHT_NO_ACK; return; }
+    if (Wire.requestFrom(ADDRS[s], (uint8_t)6) != 6) {
+        r.status = SHT_NO_ACK;
+        Wire.end();     // same STM32duino Wire workaround as in startMeasurement()
+        Wire.begin();
+        return;
+    }
     for (uint8_t i = 0; i < 6; i++) buf[i] = (uint8_t)Wire.read();
     if (crc8(buf, 2) != buf[2] || crc8(buf + 3, 2) != buf[5]) { r.status = SHT_BAD_CRC; return; }
 
@@ -132,7 +138,16 @@ const ShtReading& envReading(EnvSensor s) { return readings[s]; }
 
 uint16_t envPowerCycles() { return powerCycles; }
 
-// STUB — session C (#34) implements the sensor selection.
+// :90 (PROTOCOL.md §4.3): auto prefers the external J9 sensor (the on-board one sits next to the
+// motor drivers and reads warm) and falls back to the on-board one; 1 / 2 use only that sensor.
 int8_t envSelected() {
-    return envReading(ENV_EXTERNAL).status == SHT_OK ? (int8_t)ENV_EXTERNAL : (int8_t)-1;
+    const bool onb = readings[ENV_ONBOARD].status == SHT_OK;
+    const bool ext = readings[ENV_EXTERNAL].status == SHT_OK;
+    switch (settings.envSelect) {
+        case ENV_SEL_ONBOARD:  return onb ? (int8_t)ENV_ONBOARD : (int8_t)-1;
+        case ENV_SEL_EXTERNAL: return ext ? (int8_t)ENV_EXTERNAL : (int8_t)-1;
+        default:
+            if (ext) return (int8_t)ENV_EXTERNAL;
+            return onb ? (int8_t)ENV_ONBOARD : (int8_t)-1;
+    }
 }
