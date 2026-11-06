@@ -72,6 +72,25 @@ EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load ca
 - `hw/3dmodels/`: 3D models not shipped with KiCad (XT30PW-M, SHT3x DFN-8), referenced as `${KIPRJMOD}/3dmodels/…`.
 - `*.kicad_prl` (per-user UI state) is not tracked.
 
+### Production files
+
+Gerbers, drill files, BOM and CPL are **not committed** (`hw/production/` is ignored), so the tree can't hold
+stale outputs. Each ordered revision attaches them to its `hw-rev<x.y>` GitHub release.
+
+To generate them, use the JLC fabrication toolkit (bennymeg's JLC-Plugin-for-KiCad, options in
+`hw/fabrication-toolkit-options.json`: auto-translate, auto-fill, **exclude DNP**). It writes `hw/production/`:
+`astrouniboard.zip` (gerbers + drill), `bom.csv`, `positions.csv`, `designators.csv`, `netlist.ipc`.
+Check before ordering:
+- every BOM line has an LCSC number (the `LCSC` field on each fitted part);
+- H1–H8 are absent from BOM and CPL (they have *exclude from BOM / position files* set);
+- DNP parts (J3, J4, J8, J9, J10) are absent;
+- the zip holds F/B copper, mask, paste, silkscreen, Edge.Cuts and PTH/NPTH drill (2-layer board).
+
+The toolkit release for KiCad 9 fails under KiCad 10 (`FOOTPRINT.Duplicate()` signature). Until it is updated,
+run its CLI from a copy with that call replaced by `pcbnew.FOOTPRINT(footprint)` and the action-plugin
+registration in `__init__.py` removed:
+`python -m <copy>.cli -p hw/astrouniboard.kicad_pcb -t -f -e` (KiCad's bundled `python.exe`).
+
 ## MCU
 
 | Property | Value |
