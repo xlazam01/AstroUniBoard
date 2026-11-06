@@ -1,7 +1,10 @@
 """Hardware tests for the AstroUniBoard firmware V2 (docs/PROTOCOL.md 1.0) over USB CDC.
 
-The board is found by USB VID 0x1209 / PID 0x0001 unless --port is given. Without a board every
-test is skipped, so `python -m pytest --collect-only tools/hwtest` works anywhere.
+The board is found by USB VID 0x1209 / PID 0x0001 unless --port is given. That is the shared
+pid.codes TEST pid (OpenWheel and other devices use it too), so a port is used only after it
+identifies as ASTROUNIBOARD, and after a reboot the suite reconnects to the same USB serial number,
+never to another device. Without a board every test is skipped, so
+`python -m pytest --collect-only tools/hwtest` works anywhere.
 """
 import re
 import time
@@ -30,11 +33,35 @@ def pytest_addoption(parser):
     parser.addoption("--move-timeout", type=float, default=30.0, help="max seconds for one move")
 
 
-def find_port():
+IDENTIFY_PREFIX = "ASTROUNIBOARD,"
+
+
+def identify(port):
+    """:32# reply of the device on port, '' if it does not answer. Sends nothing else."""
+    try:
+        s = serial.Serial(port, 115200, timeout=CMD_TIMEOUT, write_timeout=1.0)
+    except (serial.SerialException, OSError):
+        return ""
+    try:
+        s.reset_input_buffer()
+        s.write(b":32#")
+        return s.read_until(b"#").decode("ascii", errors="replace")
+    except (serial.SerialException, OSError):
+        return ""
+    finally:
+        s.close()
+
+
+def find_port(usb_serial=None):
+    """First 1209:0001 port that identifies as an AstroUniBoard (and has usb_serial, if given)."""
     if list_ports is None:
         return None
     for p in list_ports.comports():
-        if p.vid == USB_VID and p.pid == USB_PID:
+        if p.vid != USB_VID or p.pid != USB_PID:
+            continue
+        if usb_serial and (p.serial_number or "").upper() != usb_serial.upper():
+            continue
+        if identify(p.device).startswith(IDENTIFY_PREFIX):
             return p.device
     return None
 
@@ -53,6 +80,7 @@ class Board:
 
     def __init__(self, port, move_timeout=30.0):
         self.port = port
+        self.usb_serial = usb_serial_number(port)   # reconnect only to this device
         self.move_timeout = move_timeout
         self.ser = None
 
@@ -70,12 +98,17 @@ class Board:
             self.ser.close()
 
     def reconnect(self, timeout=20.0):
-        """After a reboot: wait for the port (found again by VID/PID) and a ping answer."""
+        """After a reboot: wait for the same board (same USB serial number, identifies as
+        ASTROUNIBOARD) to come back. Never switches to another device with the same VID/PID."""
         self.close()
         end = time.time() + timeout
         while time.time() < end:
-            port = find_port() or self.port
+            port = find_port(self.usb_serial) if self.usb_serial else None
+            if port is None and not self.usb_serial and identify(self.port).startswith(IDENTIFY_PREFIX):
+                port = self.port
             try:
+                if port is None:
+                    raise OSError("board not back yet")
                 self.port = port
                 self.open()
                 if self.raw(":25#") == "OK#":
@@ -210,7 +243,10 @@ def board(request):
         b.open()
     except (serial.SerialException, OSError) as e:
         pytest.skip(f"cannot open {port}: {e}")
-    assert b.raw(":25#") == "OK#", f"{port} does not answer :25# - wrong port or other firmware"
+    ident = b.raw(":32#")
+    if not ident.startswith(IDENTIFY_PREFIX):
+        b.close()
+        pytest.exit(f"{port} is not an AstroUniBoard (:32# -> {ident!r}); nothing was sent but :32#", 2)
     b.wait_idle()
     b.initial = b.snapshot()
     yield b
