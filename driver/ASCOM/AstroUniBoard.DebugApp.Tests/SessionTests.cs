@@ -52,6 +52,39 @@ namespace AstroUniBoard.DebugApp.Tests
         }
 
         [Fact]
+        public void LocalServerSnapshotParses()
+        {
+            // verbatim shape of driver/ASCOM/AstroUniBoard.Ascom BoardActions (ascom-drivers branch)
+            const string json = @"{""connection"":""Connected"",""port"":""COM9"",""problem"":null,
+             ""identity"":{""model"":""G0B1"",""firmware"":""FW2.0.0"",""protocol"":2,""serial"":""X"",""caps"":15},
+             ""status"":{""state"":""RotatorMoving"",""stateCode"":3,""focuserPosition"":4000,""focuserTarget"":-1,""rotatorAngle"":1200,""rotatorTarget"":9000,""error"":0,""errorText"":null,""flags"":48,""timeUtc"":""2026-11-06T20:00:00.000Z""},
+             ""housekeeping"":{""mcuTemperature"":31.2,""vdda"":3.301,""driverTemperatureClass"":0,""focuserDriverTemperatureClass"":0,""rotatorDriverTemperatureClass"":0,""warnings"":0,""warningsText"":null},
+             ""environment"":null,
+             ""focuser"":{""maxPosition"":8100,""speed"":900,""acceleration"":2000,""backlash"":0,""reverse"":false,""stepSizeCentiMicrons"":111},
+             ""rotator"":{""wrapMinCdeg"":-18000,""wrapMaxCdeg"":18000,""speedCdegPerS"":1200,""accelerationCdegPerS2"":2400,""reverse"":false,""stepsPerKiloDegree"":88889,""bootHome"":false,""homeToleranceCdeg"":50},
+             ""host"":{""driverVersion"":""0.1"",""clients"":2,""skyOffsetDegrees"":0,""tempComp"":false,""tempCompStepsPerDegree"":0,""tempCompThresholdDegrees"":0.5}}";
+            BoardView v = BoardView.FromJson(json);
+            Assert.True(v.IsConnected);
+            Assert.Equal((int)BoardState.RotatorMoving, v.Status.State);
+            Assert.Equal(9000, v.Status.RotatorTarget);
+            Assert.Null(v.Environment);
+            Assert.Equal(88889, v.Rotator.StepsPerKiloDegree);
+        }
+
+        [Fact]
+        public void LocalServerLogTimesAreLocal()
+        {
+            var d = new FakeDriver();
+            using (var s = new AscomSession(() => d))
+            {
+                s.Open();
+                d.LogJson = "[{\"seq\":5,\"time\":\"2026-11-06T14:41:01.694\",\"text\":\"x\"}]";
+                LogEntry e = s.ReadLog(0).Single();
+                Assert.Equal(new DateTime(2026, 11, 6, 14, 41, 1, 694, DateTimeKind.Local).ToUniversalTime(), e.Time);
+            }
+        }
+
+        [Fact]
         public void ConnectionAsNumberParses()
         {
             Assert.True(BoardView.FromJson(@"{""connection"":2}").IsConnected);
@@ -89,6 +122,7 @@ namespace AstroUniBoard.DebugApp.Tests
         public readonly List<string> Calls = new List<string>();
         public bool Connected;
         public string SnapshotJson = @"{""Connection"":""Connected"",""Port"":""COM9"",""Identity"":{""Model"":""REV1"",""Firmware"":""FW2.0.0"",""Protocol"":2,""Serial"":""ABC"",""Caps"":15}}";
+        public string LogJson;
         public Func<string, string> RawReply = c => c == ":33#" ? "S,1,0,-1,0,-1,0,30" : "ERR,10";
 
         public string Name { get { return "fake driver"; } }
@@ -105,6 +139,7 @@ namespace AstroUniBoard.DebugApp.Tests
                 case "AstroUniBoard:Snapshot": return SnapshotJson;
                 case "AstroUniBoard:Raw": return RawReply(parameter);
                 case "AstroUniBoard:Log":
+                    if (LogJson != null) return LogJson;
                     var all = new[] { "[{\"seq\":1,\"time\":\"2026-11-06T13:00:00.000Z\",\"text\":\"connected COM9\"}", ",{\"seq\":2,\"time\":\"2026-11-06T13:00:01.000Z\",\"text\":\"board warning\"}]" };
                     return parameter == "1" ? "[{\"seq\":2,\"time\":\"2026-11-06T13:00:01.000Z\",\"text\":\"board warning\"}]" : all[0] + all[1];
                 case "AstroUniBoard:HaltAll": case "AstroUniBoard:ClearError": case "AstroUniBoard:SaveSettings": return "OK";
