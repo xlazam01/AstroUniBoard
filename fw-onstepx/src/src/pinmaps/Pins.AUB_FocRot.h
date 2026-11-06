@@ -20,8 +20,10 @@
 // I2C bus (shared) --------------------------------------------------------------------------------
 // PA9  = SCL, PA10 = SDA  (Wire / HAL_WIRE)
 // Devices on bus:
-//   0x44 - SHT31 weather sensor (temp/humidity); powered via SHT31_POWER_PIN = PB9
-//   0x57 - 24AA64 EEPROM (NV storage)
+//   0x45 - on-board SHT31 (U8), rev 2.0 (ADDR tied to its PB9 supply; 0x44 on rev 1);
+//          powered via SHT31_POWER_PIN = PB9, answers only while powered
+//   0x44 - external SHT31 on J9 (rev 2.0 only)
+//   0x50 - 24AA64T EEPROM (NV storage); SOT-23 package has no address pins
 //   0x68 - MPU6000 accelerometer (AXIS3 rotator IMU homing)
 //            Chip is mounted PCB-side up, connector side down (flipped vs. gravity).
 //            Effective gravity vector lands on +Z axis of the chip.
