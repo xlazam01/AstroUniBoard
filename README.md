@@ -169,7 +169,7 @@ Notes before ordering:
 - **U5 STM32G0B1CBT6 had no JLC stock** on 2026-11-06. Use global sourcing or a consigned part, or the
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
 - 17 Basic, 3 Preferred and 22 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
-- `HW/production/` still holds the **rev 1** outputs (barrel jack, no LCSC numbers). Regenerate them with the JLC
+- `hw/production/` still holds the **rev 1** outputs (barrel jack, no LCSC numbers). Regenerate them with the JLC
   fabrication toolkit from the rev 2.1 project before you order.
 
 ## Assembly
@@ -292,7 +292,7 @@ with a firmware that does not start can otherwise only be recovered over SWD, an
 ```
 fw/            firmware V2 (PlatformIO, Arduino core) — module map in fw/MODULES.md
 fw-onstepx/    firmware V1, OnStepX port
-HW/            KiCad 10 project (schematic, PCB, project symbols); HW/production = JLC outputs (rev 1, stale)
+hw/            KiCad 10 project (schematic, PCB, project symbols and footprints, 3D models); hw/production = JLC outputs (rev 1, stale)
 driver/ASCOM/  ASCOM LocalServer, Core library, debug app, tests, installer, ConformU reports
 driver/sim/    Python board simulator
 docs/          HARDWARE, PROTOCOL, FIRMWARE, USB_IDS, USE_CASES, V2_PLAN, ADRs, images
@@ -304,6 +304,6 @@ Planning and status: [docs/V2_PLAN.md](docs/V2_PLAN.md), issues on
 ## Licence and credits
 
 - Firmware and software (`fw/`, `fw-onstepx/`, `driver/`): GPL-3.0, see [LICENSE](LICENSE).
-- Hardware (`HW/`): CERN-OHL-S-2.0, see [LICENSE-HARDWARE](LICENSE-HARDWARE).
+- Hardware (`hw/`): CERN-OHL-S-2.0, see [LICENSE-HARDWARE](LICENSE-HARDWARE).
 - `fw-onstepx/` is derived from [OnStepX](https://github.com/hjd1964/OnStepX) by Howard Dutton and contributors.
 - Sibling project, same protocol family: [OpenWheel](https://github.com/xlazam01/OpenWheel) filter wheel.

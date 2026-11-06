@@ -25738,7 +25738,7 @@
 				)
 			)
 		)
-		(property "Footprint" "myLib_SMD:L_5.5x5.1mm"
+		(property "Footprint" "AstroUniBoard:L_5.5x5.1mm"
 			(at 200.66 49.53 0)
 			(hide yes)
 			(show_name no)
@@ -26790,7 +26790,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_AMASS:AMASS_XT30PW-M_1x02_P2.50mm_Horizontal"
+		(property "Footprint" "AstroUniBoard:AMASS_XT30PW-M_1x02_P2.50mm_Horizontal"
 			(at 22.86 46.99 0)
 			(hide yes)
 			(show_name no)

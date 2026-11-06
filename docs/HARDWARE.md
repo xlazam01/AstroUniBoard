@@ -63,6 +63,15 @@ Other rev 2.0 changes (no firmware impact): schematic reorganised, +5V3 buck 5.3
 and 56k Rp on the downstream USB-C, JP5 (+12V motors) bridged by default, TMC2209 SPREAD/STDBY to GND,
 EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load caps DNP, track clean-up.
 
+## KiCad project
+
+`hw/astrouniboard.kicad_pro` (KiCad 10) is self-contained apart from the KiCad standard libraries:
+- `hw/astrouniboard.kicad_sym` (`sym-lib-table`): project symbols.
+- `hw/AstroUniBoard.pretty` (`fp-lib-table`): footprints that are not in the KiCad library — L4 (IHLP-2020 pads,
+  `L_5.5x5.1mm`), J6 (XT30PW-M with its 3D model) and the logo.
+- `hw/3dmodels/`: 3D models not shipped with KiCad (XT30PW-M, SHT3x DFN-8), referenced as `${KIPRJMOD}/3dmodels/…`.
+- `*.kicad_prl` (per-user UI state) is not tracked.
+
 ## MCU
 
 | Property | Value |

@@ -21,20 +21,25 @@ __pycache__/
 venv/
 
 # KiCad auto-save / lock / backups
-HW/**/*.bak
-HW/**/*-backups/
-HW/**/production/backups/
-HW/**/fp-info-cache
-HW/**/#auto_saved_files#
-HW/**/~*.lck
-HW/**/~*.sch.lck
-HW/.history/
-HW/**/*_bck.*
-HW/**/.history_trim/
+hw/**/*.bak
+hw/**/*-backups/
+hw/**/production/backups/
+hw/**/fp-info-cache
+hw/**/#auto_saved_files#
+hw/**/~*.lck
+hw/**/~*.sch.lck
+hw/.history/
+hw/**/*_bck.*
+hw/**/.history_trim/
+# per-user KiCad UI state
+*.kicad_prl
 
 # Claude Code local settings
 .claude/settings.local.json
 fw-onstepx/.claude/settings.local.json
+# fw-onstepx agent / MCP config lives in _private/ (#80)
+fw-onstepx/.claude/
+fw-onstepx/.mcp.json
 
 # OS
 .DS_Store
