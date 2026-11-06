@@ -1,6 +1,7 @@
 // Setup dialog shared by the Focuser, Rotator and ObservingConditions drivers: choose the board
 // (by USB serial, manual COM port as fallback), watch the live status, change the focuser and rotator
-// settings stored in the board (written with :23#), the rotator sky offset (host only, Q18) and the
+// settings stored in the board (written with :23#), the rotator's ASCOM Sync offset (host only, Q18;
+// shown read-only with a reset - N.I.N.A. keeps its own sky angle and never sets it) and the
 // temperature compensation coefficient (host side, Q21).
 using System;
 using System.Collections.Generic;
@@ -42,7 +43,8 @@ namespace AstroUniBoard.Ascom
         private readonly CheckBox chkRotBootHome = new CheckBox { Text = "IMU home after power-on" };
         private readonly Button btnRotWrite = new Button { Text = "Write to board" };
         // host side
-        private readonly NumericUpDown numSkyOffset = Num(0, 359.99m, 2);
+        private readonly Label lblSyncOffset = new Label();
+        private readonly Button btnResetOffset = new Button { Text = "Reset to 0" };
         private readonly NumericUpDown numTcCoef = Num(-10000, 10000, 2);
         private readonly NumericUpDown numTcThreshold = Num(0.1m, 10, 2);
 
@@ -124,9 +126,10 @@ namespace AstroUniBoard.Ascom
 
             var host = new GroupBox { Text = "This PC (ASCOM profile)", Left = 12, Top = y, Width = W - 24, Height = 86 };
             int hy = 22;
-            host.Controls.Add(new Label { Text = "Rotator sky offset (°):", Left = 12, Top = hy + 3, Width = 170 });
-            numSkyOffset.SetBounds(185, hy, 100, 24); host.Controls.Add(numSkyOffset);
-            host.Controls.Add(new Label { Text = "sky angle = mechanical angle + offset; set by ASCOM Sync (plate solve)", Left = 295, Top = hy + 3, Width = 430, ForeColor = Color.DimGray });
+            host.Controls.Add(new Label { Text = "Rotator ASCOM Sync offset:", Left = 12, Top = hy + 3, Width = 170 });
+            lblSyncOffset.SetBounds(185, hy + 3, 70, 20); host.Controls.Add(lblSyncOffset);
+            btnResetOffset.SetBounds(258, hy - 1, 85, 26); host.Controls.Add(btnResetOffset);
+            host.Controls.Add(new Label { Text = "only for programs that sync the rotator through ASCOM; N.I.N.A. keeps its own sky angle", Left = 350, Top = hy + 3, Width = 390, ForeColor = Color.DimGray });
             hy += 30;
             host.Controls.Add(new Label { Text = "TempComp (steps/°C):", Left = 12, Top = hy + 3, Width = 170 });
             numTcCoef.SetBounds(185, hy, 100, 24); host.Controls.Add(numTcCoef);
@@ -151,6 +154,13 @@ namespace AstroUniBoard.Ascom
             btnRotWrite.Click += OnRotatorWrite;
             btnHaltAll.Click += (s, e) => Run(Server.Controller.HaltAll(4000));
             btnClear.Click += (s, e) => Run(Server.Controller.ClearError(4000));
+            btnResetOffset.Click += (s, e) =>
+            {
+                RotatorState.SkyOffset = 0;
+                RotatorState.TargetSky = null;
+                Server.Log("rotator sync offset reset to 0 in the setup dialog");
+                RefreshStatus();
+            };
             btnDebugApp.Click += OnDebugApp;
             btnOk.Click += OnOk;
             timer.Tick += (s, e) => RefreshStatus();
@@ -186,7 +196,6 @@ namespace AstroUniBoard.Ascom
         {
             LoadDevices();
             txtManual.Text = Settings.ManualPort;
-            numSkyOffset.Value = Clamp(numSkyOffset, RotatorState.SkyOffset);
             numTcCoef.Value = Clamp(numTcCoef, Settings.TempCompStepsPerDegree);
             numTcThreshold.Value = Clamp(numTcThreshold, Settings.TempCompThresholdDegrees);
             Server.AcquireConnection();
@@ -284,8 +293,12 @@ namespace AstroUniBoard.Ascom
                 sb.AppendLine("Focuser:     " + st.FocuserPosition + (st.FocuserTarget >= 0 ? " -> " + st.FocuserTarget : "") +
                               (s.Focuser != null ? " of 0.." + s.Focuser.MaxPosition : "") + (st.Has(StatusFlags.FocuserUnverified) ? "   (position unverified)" : ""));
                 double mech = st.RotatorAngle / 100.0;
-                sb.AppendLine("Rotator:     mechanical " + mech.ToString("0.00", CI) + "°, sky " + RotatorState.Normalize(mech + RotatorState.SkyOffset).ToString("0.00", CI) + "°" +
-                              (st.RotatorTarget >= 0 ? " -> mechanical " + (st.RotatorTarget / 100.0).ToString("0.00", CI) + "°" : "") +
+                double offset = RotatorState.SkyOffset;
+                // The sky angle is shown only when an ASCOM client has synced; otherwise it equals the
+                // mechanical angle, and N.I.N.A. shows its own sky angle anyway.
+                sb.AppendLine("Rotator:     " + mech.ToString("0.00", CI) + "° mechanical" +
+                              (st.RotatorTarget >= 0 ? " -> " + (st.RotatorTarget / 100.0).ToString("0.00", CI) + "°" : "") +
+                              (offset != 0 ? "   (ASCOM sky " + RotatorState.Normalize(mech + offset).ToString("0.00", CI) + "°)" : "") +
                               (st.Has(StatusFlags.RotatorUnverified) ? "   (angle unverified)" : ""));
                 EnvironmentReading env = s.Environment;
                 sb.AppendLine("Environment: " + (env == null ? "no valid reading" : env.ToString()) +
@@ -302,6 +315,10 @@ namespace AstroUniBoard.Ascom
             bool ready = s.HasStatus;
             btnHaltAll.Enabled = ready;
             btnClear.Enabled = ready && st.Error != 0;
+            double syncOffset = RotatorState.SkyOffset;
+            string offsetText = syncOffset == 0 ? "none" : syncOffset.ToString("0.00", CI) + "°";
+            if (lblSyncOffset.Text != offsetText) lblSyncOffset.Text = offsetText;
+            btnResetOffset.Enabled = syncOffset != 0;
 
             if (!ready) { focLoaded = rotLoaded = false; }
             if (ready && !focLoaded && s.Focuser != null) { LoadFocuser(s.Focuser); focLoaded = true; }
@@ -444,8 +461,6 @@ namespace AstroUniBoard.Ascom
             Settings.PreferredUsbSerial = serial;
             Settings.ManualPort = manual;
 
-            double offset = (double)numSkyOffset.Value;
-            if (Math.Abs(offset - RotatorState.SkyOffset) > 0.004) RotatorState.SkyOffset = offset;
             Settings.TempCompStepsPerDegree = (double)numTcCoef.Value;
             Settings.TempCompThresholdDegrees = (double)numTcThreshold.Value;
             Server.TempComp.LoadSettings();
