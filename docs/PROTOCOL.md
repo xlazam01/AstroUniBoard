@@ -1,8 +1,7 @@
 # Serial protocol — AstroUniBoard firmware V2
 
-Status: **draft 0.1 (2026-11-06)**, issue #7. This part covers framing, USB identity, the common
-block (20–49) and error codes. The device blocks are placeholders until #8 (focuser 50–69),
-#9 (rotator 70–89) and #10 (environment / IMU 90–99) are written.
+Status: **draft 0.2 (2026-11-06)**. Framing, USB identity, common block (20–49) and error codes
+(#7), focuser block 50–69 (#8). Still placeholders: rotator 70–89 (#9), environment / IMU 90–99 (#10).
 
 The protocol is a member of the **OpenWheel family**: same framing, same reply style, same numbers
 and reply formats for the common commands, so the host `*.Core` libraries (transport, detection,
@@ -87,14 +86,16 @@ Numbers 00–19 are not used (`ERR,10`), so a host that probes the board as an O
 | 44 | set status LED brightness | 0..100 %, 0 = off | `OK#` | |
 | 45 | — (OpenWheel: Hall sensor) | | `ERR,10` | |
 | 46 | reset and safe-mode info | | see 3.5 | (as `:99#`) |
-| 47–49 | reserved for the common block | | `ERR,10` | |
+| 47 | motor driver config of one axis | `F`/`R` | see 3.6 | |
+| 48 | set motor driver config | `F`/`R`,run,hold,usteps,mode,idle_off | `OK#` | |
+| 49 | reserved for the common block | | `ERR,10` | |
 
 `:22#` and `:31#` answer `OK#`, flush, wait 50 ms so the host can read the reply, then reset.
 `:31#` stores a magic word in TAMP backup register 0 and resets; the boot code jumps to the
 STM32 system bootloader before clocks and USB start (`fw/src/bootloader.cpp`). The board comes
 back as `0483:DF11` (STM32 BOOTLOADER); after the download it starts the firmware again.
 
-`:24#` and `:42`/`:44` answer `ERR,8` while an axis moves.
+`:24#`, `:42`, `:44` and `:48` answer `ERR,8` while an axis moves.
 
 ### 3.1 Identify (`:32#`)
 
@@ -189,17 +190,113 @@ R,<reset_flags>,<last_marker>,<safe_mode>#
 
 Replaces the bring-up command `:99#` (which also prints a debug note; that field is dropped).
 
+### 3.6 Motor driver config (`:47`, `:48`)
+
+Per-axis TMC2209 settings (Q13), same command for focuser and rotator:
+
+```
+:47,F#                    → D,<run_mA>,<hold_mA>,<microsteps>,<mode>,<idle_off_s>#
+:48,F,900,450,4,1,30#     → OK#
+```
+
+| Field | Values |
+|---|---|
+| run_mA | RMS run current, mA; upper limit set by the board's sense resistors (#24) |
+| hold_mA | RMS standstill current, mA, ≤ run |
+| microsteps | 1, 2, 4, …, 256 |
+| mode | 0 StealthChop (quiet; required for StallGuard), 1 SpreadCycle |
+| idle_off_s | driver disabled this many seconds after a move; 0 = stays powered at hold current |
+
+`:48` needs all five values. Changing **microsteps** rescales every value of that axis counted in
+steps (focuser position, max, backlash, speed, acceleration; rotator steps/degree) so the physical
+values stay the same; hosts re-read them afterwards. A StallGuard threshold on an axis in
+SpreadCycle has no effect.
+
 ## 4. Device blocks
 
 | Range | Block | Spec |
 |---|---|---|
-| 50–69 | focuser: position, absolute/relative move, max, speed, acceleration, backlash, reverse, current, microsteps, set position, halt | #8 |
+| 50–69 | focuser, [§4.1](#41-focuser-5069) | #8 |
 | 70–89 | rotator: mechanical angle, move, reverse, steps/degree, cable-wrap min/max, IMU home, speed, current, microsteps | #9 |
 | 90–99 | environment and IMU: SHT31 readings, dew point, gravity vector, IMU zero calibration | #10 |
 
 Until #10 is written the firmware answers the bring-up command `:90#` with both SHT31 sensors:
 `W,<st>,<t>,<rh>,<dew>,<st>,<t>,<rh>,<dew>,<power_cycles>#` (on-board first, then J9; values valid
 only while `st` is 0). It will be renumbered or replaced.
+
+### 4.1 Focuser (50–69)
+
+Position unit: one **step** = one microstep at the axis' current microstep setting (`:47,F#`).
+Valid positions are `0..max` (soft limits, Q16); there is no homing and no limit switch.
+Get/set pairs use even/odd numbers as OpenWheel does.
+
+| Cmd | Name | Params | Answer |
+|---|---|---|---|
+| 50 | position | | steps |
+| 51 | move to absolute position | steps, `0..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 52 | move relative | ±steps, target must be in `0..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 53 | halt the focuser (decelerate) | | `OK#` |
+| 54 | get max position | | steps |
+| 55 | set max position | 1..10000000, ≥ current position | `OK#` / `ERR,7` |
+| 56 | set current position (sync, no motion) | `0..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 57 | — reserved | | `ERR,10` |
+| 58 | get speed | | steps/s |
+| 59 | set speed | 1..20000 steps/s | `OK#` / `ERR,7` |
+| 60 | get acceleration | | steps/s² |
+| 61 | set acceleration | 1..100000 steps/s² | `OK#` / `ERR,7` |
+| 62 | get backlash | | steps |
+| 63 | set backlash | 0..10000, 0 = off | `OK#` / `ERR,7` |
+| 64 | get reverse | | `0` / `1` |
+| 65 | set reverse | `0` / `1` | `OK#` / `ERR,8` |
+| 66 | get step size | | 0.01 µm per step, `0` = unknown |
+| 67 | set step size | 0..100000 | `OK#` / `ERR,7` |
+| 68–69 | — reserved | | `ERR,10` |
+
+Rules:
+- **Moves.** `:51`/`:52` answer `OK#` when the move has started; status shows state 2 and
+  `foc_target` until it ends. A target equal to the position answers `OK#` without motion. The
+  firmware never clamps: a target outside `0..max` is `ERR,7` (ASCOM drivers clamp before sending,
+  as `IFocuserV4.Move` allows). Any move while either axis is busy is `ERR,8` (Q12).
+- **Halt.** `:53` (and `:30`) decelerate; state 5 until stopped. The position is exact afterwards.
+- **Sync** `:56` sets the position counter without motion and clears status flag 0
+  (position unverified). Use it after a power loss or to define a new zero.
+- **Backlash** is taken up on a **direction change**: the firmware runs `backlash` extra steps first,
+  which the position counter does not count. If the host compensates itself (NINA's overshoot
+  method), leave it at 0 so the two do not add up.
+- **Reverse** flips the motor direction only; the position and limits keep their meaning.
+- **Step size** is not used by the firmware. It is stored so that `IFocuserV4.StepSize` and the
+  guide-focuser plugin read the same value on any PC; 0 makes ASCOM report StepSize as not
+  implemented.
+- **Persistence (Q15).** The position is written to the EEPROM 2 s after the focuser stops. A move
+  that is cut by a power loss leaves the last saved position and sets status flag 0 at the next boot.
+  All other values here are saved with `:23#`.
+- **Stall.** With a StallGuard threshold (`:42,F,<thr>#`) the focuser stops on a blocked drawtube with
+  sticky error 13; the position stays counted but status flag 0 is set.
+
+Defaults (from the V1 OnStepX setup on Triton; until changed and saved):
+
+| Setting | Default |
+|---|---|
+| microsteps | 4 |
+| run / hold current | 900 / 450 mA |
+| mode | StealthChop (V1 ran SpreadCycle; StealthChop is needed for StallGuard) |
+| idle_off | 30 s |
+| max | 8100 steps (9 mm at 0.9 steps/µm) |
+| speed | 900 steps/s (1 mm/s) |
+| acceleration | 2000 steps/s² |
+| backlash | 0 |
+| step size | 111 (1.11 µm per step) |
+
+Example session:
+
+```
+:50#          → 4000#
+:51,4500#     → OK#
+:33#          → S,2,4120,4500,9000,-1,0,30#
+:33#          → S,1,4500,-1,9000,-1,0,30#
+:52,-20000#   → ERR,7#        (target -15500 below 0)
+:56,0#        → OK#           (sync; clears "position unverified")
+```
 
 ## 5. Typical host sequence
 
@@ -246,10 +343,11 @@ until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in
 | EEPROM | some setters save at once | setters change running values; `:23#` saves |
 | 00–21, 24–29, 35–39, 45 | wheel commands | unused except 22, 23, 24, 25 |
 | 46 | — | reset / safe-mode info |
+| 47 / 48 | — | per-axis motor driver config (current, microsteps, chopper mode, idle off) |
 | sticky fault | 10 s error state, LEDs alternate | no lock-out; code stays until cleared |
 
-## 8. Open points for review
+## 8. Review decisions (2026-11-06)
 
-- `model` = `REV2` (board revision) vs. `G0B1` (MCU, as OpenWheel).
-- Whether `:24#` (reset to defaults) is wanted at all.
-- Status state 5 "halting": keep, or report the moving state until the axis has stopped.
+- Identify `model` is the **board revision** (`REV2`), not the MCU.
+- `:24#` reset to defaults **stays**.
+- Status state 5 **halting** stays: a halted axis reports 5 while it decelerates, then 1.
