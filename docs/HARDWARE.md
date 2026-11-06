@@ -96,7 +96,7 @@ EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load ca
 ### Production files
 
 Gerbers, drill files, BOM and CPL are **not committed** (`hw/production/` is ignored), so the tree can't hold
-stale outputs. Each ordered revision attaches them to its `hw-rev<x.y>` GitHub release.
+stale outputs. Each product release (`vX.Y.Z`, e.g. `v2.0.0` = rev 2.1) attaches them as `AstroUniBoard-gerbers.zip`, `-bom-jlc.csv`, `-cpl-jlc.csv`.
 
 To generate them, use the JLC fabrication toolkit (bennymeg's JLC-Plugin-for-KiCad, options in
 `hw/fabrication-toolkit-options.json`: auto-translate, auto-fill, **exclude DNP**). It writes `hw/production/`:

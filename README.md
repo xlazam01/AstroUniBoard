@@ -12,7 +12,7 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | HW rev 2.0 frozen for bring-up (tag `hw-rev2.0`), rev 2.1 ready to order. Firmware V2 `2.0.0-dev`, protocol 2. ASCOM driver 0.1.0 (pre-release, ConformU clean) |
+| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2, ASCOM driver 0.1.0 (pre-release, ConformU clean). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
 | Sensors | SHT31 temperature/humidity on board (+ optional external SHT31), MPU-6000 accelerometer for camera roll |
@@ -171,7 +171,7 @@ Notes before ordering:
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
 - 17 Basic, 3 Preferred and 24 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
 - All SMD parts are on the top side (single-sided assembly).
-- Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the `hw-rev2.x` GitHub release,
+- Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the GitHub release (`v2.0.0` for rev 2.1),
   or generate them yourself as described in [docs/HARDWARE.md](docs/HARDWARE.md#production-files).
 
 ## Assembly
