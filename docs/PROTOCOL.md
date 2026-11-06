@@ -1,7 +1,8 @@
 # Serial protocol — AstroUniBoard firmware V2
 
-Status: **draft 0.2 (2026-11-06)**. Framing, USB identity, common block (20–49) and error codes
-(#7), focuser block 50–69 (#8). Still placeholders: rotator 70–89 (#9), environment / IMU 90–99 (#10).
+Status: **1.0 (2026-11-06)** — complete definition for the first V2 firmware: framing, USB identity,
+common block 20–49 (#7), focuser 50–69 (#8), rotator 70–89 (#9), environment / IMU 90–99 (#10),
+error codes (#11). Changes after this go through a PR and raise the protocol version when incompatible.
 
 The protocol is a member of the **OpenWheel family**: same framing, same reply style, same numbers
 and reply formats for the common commands, so the host `*.Core` libraries (transport, detection,
@@ -126,7 +127,7 @@ S,1,12500,-1,9000,-1,0,30#
 
 | Field | Values |
 |---|---|
-| state | 0 init, 1 idle, 2 focuser moving, 3 rotator moving, 4 rotator homing (IMU), 5 halting |
+| state | 0 init, 1 idle, 2 focuser moving, 3 rotator moving, 4 rotator IMU homing or IMU calibration, 5 halting |
 | foc_pos | focuser position in steps |
 | foc_target | target of the running focuser move, else `-1` |
 | rot_cdeg | rotator mechanical angle 0..35999 |
@@ -217,12 +218,8 @@ SpreadCycle has no effect.
 | Range | Block | Spec |
 |---|---|---|
 | 50–69 | focuser, [§4.1](#41-focuser-5069) | #8 |
-| 70–89 | rotator: mechanical angle, move, reverse, steps/degree, cable-wrap min/max, IMU home, speed, current, microsteps | #9 |
-| 90–99 | environment and IMU: SHT31 readings, dew point, gravity vector, IMU zero calibration | #10 |
-
-Until #10 is written the firmware answers the bring-up command `:90#` with both SHT31 sensors:
-`W,<st>,<t>,<rh>,<dew>,<st>,<t>,<rh>,<dew>,<power_cycles>#` (on-board first, then J9; values valid
-only while `st` is 0). It will be renumbered or replaced.
+| 70–89 | rotator, [§4.2](#42-rotator-7089) | #9 |
+| 90–99 | environment and IMU, [§4.3](#43-environment-and-imu-9099) | #10 |
 
 ### 4.1 Focuser (50–69)
 
@@ -298,6 +295,132 @@ Example session:
 :56,0#        → OK#           (sync; clears "position unverified")
 ```
 
+### 4.2 Rotator (70–89)
+
+**Angle convention** (from `fw-onstepx/TESTPLAN_RotatorHoming.md`):
+
+| Mechanical angle | Reported (status, 0..35999) | Camera |
+|---|---|---|
+| 0 | 0 | landscape, upright — home |
+| +90° | 9000 | portrait, rotated CCW |
+| ±180° | 18000 | landscape, upside down |
+| −90° | 27000 | portrait, rotated CW |
+
+The firmware keeps a **signed mechanical angle** in centidegrees, limited by the cable-wrap range
+`min..max` (default −18000..+18000, Q17). Status reports it as 0..35999 (ASCOM `MechanicalPosition`);
+`:70#` gives the signed value. The sky angle (ASCOM `Sync` offset) is host-side only (Q18).
+
+**Cable-wrap rule.** A move never leaves `min..max`. `:71` takes a target 0..35999 and picks the
+mechanical angle `t` or `t − 36000` (or `t + 36000`) that lies inside the range; when more than one
+does, the one nearest the current angle. So with the default range, 0° → 270° goes CW via −90°, and
+from +170° to 190° goes through 0° to −170°. A target with no candidate inside the range is `ERR,7`.
+
+| Cmd | Name | Params | Answer |
+|---|---|---|---|
+| 70 | mechanical angle, signed | | cdeg, e.g. `-9000` |
+| 71 | move to angle (cable-wrap rule) | 0..35999 | `OK#` / `ERR,7` / `ERR,8` |
+| 72 | move relative | ±cdeg, target inside `min..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 73 | halt the rotator (decelerate) | | `OK#` |
+| 74 | get cable-wrap range | | `<min>,<max>` |
+| 75 | set cable-wrap range | min −36000..0, max 0..36000, current angle inside | `OK#` / `ERR,7` / `ERR,8` |
+| 76 | set mechanical angle (sync, no motion) | signed cdeg inside `min..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 77 | IMU home: rotate to the IMU zero, then set the angle to 0 | | `OK#` / `ERR,9` / `ERR,14` / `ERR,15` / `ERR,8` |
+| 78 | get speed | | cdeg/s |
+| 79 | set speed | 10..3600 cdeg/s | `OK#` / `ERR,7` |
+| 80 | get acceleration | | cdeg/s² |
+| 81 | set acceleration | 10..36000 cdeg/s² | `OK#` / `ERR,7` |
+| 82 | get reverse | | `0` / `1` |
+| 83 | set reverse | `0` / `1` | `OK#` / `ERR,8` |
+| 84 | get steps per degree | | microsteps per 1000°, e.g. `88889` |
+| 85 | set steps per degree | 1000..10000000 | `OK#` / `ERR,7` / `ERR,8` |
+| 86 | get boot home | | `0` / `1` |
+| 87 | set boot home (IMU home after power-on, Q20) | `0` / `1` | `OK#` |
+| 88 | get home tolerance | | cdeg |
+| 89 | set home tolerance | 5..500 cdeg | `OK#` / `ERR,7` |
+
+Rules:
+- **Moves** behave like focuser moves: `OK#` when started, state 3 and `rot_target_cdeg` in status
+  until done, `ERR,8` while any axis is busy, no clamping.
+- **Set home** is `:76,0#`: the current orientation becomes 0 and status flag 1 (angle unverified) clears.
+  **Go home** is `:71,0#` — with the wrap rule it always unwinds.
+- **IMU home** `:77` (state 4) needs the IMU zero calibration (`:95`, else `ERR,9`) and a usable
+  gravity direction (`ERR,15` when the optical axis is within ~20° of vertical; homing works at any
+  other altitude). It moves toward the IMU zero along the unwinding path, re-reads the IMU after the
+  rotator settles and corrects, up to 3 passes, until within the home tolerance, then sets the angle
+  to 0 and clears flag 1. More passes than that → sticky error 1.
+- **Boot home** (default off): if on, the firmware runs `:77` once after power-on when the IMU is
+  calibrated and usable; otherwise the angle stays at the saved value with flag 1 set.
+- **Persistence** as the focuser: the angle is saved 2 s after a move; a power loss mid-move keeps
+  the last saved angle and sets flag 1. Other values are saved with `:23#`.
+
+Defaults (V1 OnStepX config, Triton rotator: 200-step motor, 10:1 belt):
+
+| Setting | Default |
+|---|---|
+| microsteps | 16 |
+| run / hold current | 650 / 325 mA |
+| mode | StealthChop |
+| idle_off | 0 (stays powered: holds the camera angle) |
+| steps per degree | 88889 (88.889 /°) |
+| speed | 1200 cdeg/s (12°/s) |
+| acceleration | 2400 cdeg/s² |
+| cable-wrap range | −18000..+18000 |
+| boot home | 0 |
+| home tolerance | 50 (0.5°) |
+
+Example:
+
+```
+:70#          → 17000#                 (+170°)
+:71,19000#    → OK#                    (190° = −170°, goes back through 0)
+:33#          → S,3,4500,-1,12000,19000,0,30#
+:77#          → OK#                    (IMU home)
+:33#          → S,1,4500,-1,0,-1,0,30#
+```
+
+### 4.3 Environment and IMU (90–99)
+
+| Cmd | Name | Params | Answer |
+|---|---|---|---|
+| 90 | environment (selected sensor) | | `W,<src>,<t>,<rh>,<dew>#` / `ERR,14` |
+| 91 | both SHT31 sensors | | `V,<st>,<t>,<rh>,<dew>,<st>,<t>,<rh>,<dew>,<power_cycles>#` |
+| 92 | get sensor selection | | `0` auto, `1` on-board, `2` external |
+| 93 | set sensor selection | `0` / `1` / `2` | `OK#` / `ERR,7` |
+| 94 | IMU reading | | `I,<roll>,<tilt>,<ax>,<ay>,<az>#` / `ERR,14` |
+| 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,8` / `ERR,14` / `ERR,15` |
+| 96 | IMU calibration data | | `C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>#` |
+| 97–99 | — reserved | | `ERR,10` |
+
+**Environment.** `t` and `dew` in 0.1 °C, `rh` in 0.1 %RH. `:90` returns the reading the drivers
+use (ASCOM ObservingConditions, INDI WEATHER, host temperature compensation): `src` 1 on-board, 2
+external. Auto (default) prefers the external J9 sensor — the on-board one sits next to the motor
+drivers and reads warm. `:91` is the detailed view for the debug app: on-board group first, then
+external; `st` 0 valid, 1 no answer (absent, unpowered or bus fault), 2 CRC error, 3 no measurement yet since boot (`ShtStatus` in `fw/src/env_sht31.h`); values are the last good
+reading; `power_cycles` counts supply restarts of the on-board sensor. Readings are refreshed every
+2 s. No temperature compensation in the firmware (Q21).
+
+**IMU** (MPU-6000 on I2C 0x68, on the board that rotates with the camera, Q19).
+- `:94`: `roll` = camera roll relative to the IMU zero, signed cdeg (`-99999` when not calibrated or
+  the optical axis is too steep); `tilt` = angle between the optical axis and vertical, cdeg
+  (`-99999` when not calibrated); `ax ay az` = filtered acceleration in mg, chip axes.
+- `:95` (Q19b) — set the camera **landscape, upright**, scope not near the zenith, then send `:95#`.
+  The firmware records gravity `g0`, rotates the rotator +90°, records `g90`, returns to the start,
+  and derives the rotation axis `n = g0 × g90` (normalised). This works for any mounting of the
+  board (Triton: upside down). State 4 while it runs. It fails with sticky error 3 when the two
+  vectors are not about 90° apart (rotator slipped, IMU moved). On success `g0` and `n` are written
+  to the EEPROM at once (not waiting for `:23#`), status flag 7 clears and the current angle is set to 0.
+- Roll is the signed angle from `g0` to the current gravity, both projected onto the plane normal to
+  `n`, sign by `n`. It is meaningful only when gravity has a component in that plane: within ~20° of
+  vertical, `:77` and `:95` answer `ERR,15`.
+- `:96` returns the stored calibration (`valid` 0/1, `g0` in mg, `n` in 1/10000).
+
+Example:
+
+```
+:90#          → W,2,85,812,54#         (external: 8.5 °C, 81.2 %RH, dew point 5.4 °C)
+:94#          → I,-120,6230,12,-998,41#
+```
+
 ## 5. Typical host sequence
 
 1. Find ports with VID 0x1209 / PID 0x0001 (later the assigned PID).
@@ -328,6 +451,7 @@ different meaning; codes OpenWheel uses for wheel-only faults are left unused he
 | 12 | not changeable at runtime | rejection | |
 | 13 | motor stalled (StallGuard) | sticky fault | |
 | 14 | sensor missing or no valid reading | rejection | SHT31 / IMU query without a valid value |
+| 15 | IMU: optical axis too close to vertical | rejection | `:77` / `:95` near the zenith (roll undefined) |
 
 A sticky fault stops the moving axis, returns state to idle and keeps the code in `:33#` / `:34#`
 until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in the reply.
