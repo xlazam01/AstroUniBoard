@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <!-- x86 like the ASCOM LocalServer template: works for 32 and 64 bit clients through out-of-process COM -->
+    <PlatformTarget>x86</PlatformTarget>
+    <Platforms>x86</Platforms>
+    <AssemblyName>AstroUniBoard.Ascom.Server</AssemblyName>
+    <RootNamespace>AstroUniBoard.Ascom</RootNamespace>
+    <Version>0.1.0</Version>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Description>ASCOM Focuser, Rotator and ObservingConditions drivers for the AstroUniBoard (one LocalServer)</Description>
+    <!-- ASCOM Platform 7 assemblies come from the GAC of the machine that builds (same as OpenWheel) -->
+    <AscomGac>$(windir)\assembly\GAC_MSIL</AscomGac>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ASCOM.DeviceInterfaces">
+      <HintPath>$(AscomGac)\ASCOM.DeviceInterfaces\6.0.0.0__565de7938946fba7\ASCOM.DeviceInterfaces.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ASCOM.Exceptions">
+      <HintPath>$(AscomGac)\ASCOM.Exceptions\6.0.0.0__565de7938946fba7\ASCOM.Exceptions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ASCOM.Utilities">
+      <HintPath>$(AscomGac)\ASCOM.Utilities\6.0.0.0__565de7938946fba7\ASCOM.Utilities.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ASCOM.Attributes">
+      <HintPath>$(AscomGac)\ASCOM.Attributes\6.0.0.0__565de7938946fba7\ASCOM.Attributes.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AstroUniBoard.Core\AstroUniBoard.Core.csproj" />
+  </ItemGroup>
+</Project>

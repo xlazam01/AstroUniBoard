@@ -52,6 +52,9 @@ namespace AstroUniBoard.Core
                     ReadBufferSize = 4096
                 };
                 p.Open();
+                // The SerialStream finalizer throws ObjectDisposedException (and kills the process) when
+                // the port was closed on another thread or the USB device vanished; Close() disposes it.
+                try { GC.SuppressFinalize(p.BaseStream); } catch { }
                 port = p;
             }
             catch (Exception ex)
