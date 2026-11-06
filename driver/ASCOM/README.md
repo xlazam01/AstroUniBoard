@@ -8,9 +8,11 @@ Copied and adapted from OpenWheel `driver/ASCOM` (decision: copy & adapt, see `d
 | `AstroUniBoard.Core.Tests` | xUnit tests against an in-memory fake board that misbehaves: silence, garbage, partial lines, floods, late replies, unplug, identify gate re-lock, a different board after a reboot |
 | `AstroUniBoard.DebugApp` | WinForms control & debug app (#45): through the ASCOM driver's Action contract or directly on the port. See its [README](AstroUniBoard.DebugApp/README.md) |
 | `AstroUniBoard.DebugApp.Tests` | the app's ASCOM path against a fake driver and a loopback over `FakeBoard`; opt-in hardware tests |
+| `AstroUniBoard.Ascom` | ASCOM LocalServer `AstroUniBoard.Ascom.Server.exe`: Focuser (IFocuserV4), Rotator (IRotatorV4), ObservingConditions (IObservingConditionsV2) on one port, setup dialog, Action contract for the debug app — see `SPEC.md` |
+| `AstroUniBoard.Ascom.Check` | direct checks of the driver classes against a real board (no registration needed) |
+| `conformance/` | ConformU reports |
 
-Planned next to these: the ASCOM LocalServer (Focuser, Rotator, ObservingConditions on one port),
-the Inno Setup installer and ConformU reports (`docs/V2_PLAN.md` §5).
+Planned next to these: the Inno Setup installer (`docs/V2_PLAN.md` §5).
 
 ## BoardController in short
 

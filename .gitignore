@@ -45,3 +45,6 @@ driver/**/obj/
 driver/**/TestResults/
 *.user
 .vs/
+
+# Local dev copy of the ASCOM LocalServer that gets registered (as in OpenWheel)
+driver/ASCOM/dist/

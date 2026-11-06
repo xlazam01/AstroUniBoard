@@ -1,0 +1,117 @@
+ConformU 4.5.2 conformance run, driver ASCOM.AstroUniBoard.Focuser 0.1, board REV2 FW2.0.0 (protocol 2) on COM9, 2026-11-06
+Command: conformu conformance ASCOM.AstroUniBoard.Focuser
+Result: no errors, warnings or issues; all members within target response times.
+
+
+
+15:00:28.798 ASCOM Universal Device Conformance Checker Version 4.5.2.56139, Build time: so 17 října 2026 12:11:34          
+15:00:28.808                                              
+15:00:28.810 Operating system is Windows 11 (26H2), Processor is Intel/AMD 64bit, Application is 64bit.          
+15:00:28.810                                              
+15:00:28.810 COM Driver                          INFO     Checking ProgID: ASCOM.AstroUniBoard.Focuser
+15:00:28.813 COM Driver                          OK       This driver is compatible with the currently running 64-bit Conform Universal application.
+15:00:28.813                                              
+15:00:28.814 CreateDevice                        INFO     Creating NATIVE COM device: ASCOM.AstroUniBoard.Focuser
+15:00:28.983 CreateDevice                        INFO     Successfully created driver
+15:00:30.130 CreateDevice                        OK       Found a valid interface version: 4
+15:00:30.130 CreateDevice                        OK       Driver instance created successfully
+15:00:30.130                                              
+15:00:30.130 Connect to device                            
+15:00:30.535 Connected                           OK       Connected to device successfully using Connected = True
+15:00:31.047 Connected                           OK       Disconnected from device successfully using Connected = False
+15:00:31.620 Connect                             OK       Connected to device successfully using Connect()
+15:00:31.620                                              
+15:00:31.630 Common Driver Methods                        
+15:00:31.630 InterfaceVersion                    OK       4
+15:00:31.631 Connected                           OK       True
+15:00:31.639 Description                         OK       AstroUniBoard focuser (USB, shares the board with the rotator)
+15:00:31.645 DriverInfo                          OK       AstroUniBoard ASCOM Focuser driver 0.1 (LocalServer, protocol 2). Open source, https://github.com/xlazam01/AstroUniBoard
+15:00:31.648 DriverVersion                       OK       0.1
+15:00:31.651 Name                                OK       AstroUniBoard Focuser (FW2.0.0)
+15:00:31.651                                              
+15:00:31.724 SupportedActions                    OK       Found action: AstroUniBoard:Raw
+15:00:31.725 SupportedActions                    OK       Found action: AstroUniBoard:Snapshot
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:Log
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:HaltAll
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:ClearError
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:SaveSettings
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:ImuHome
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:ImuCalibrate
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:Reboot
+15:00:31.726 SupportedActions                    OK       Found action: AstroUniBoard:EnterDfu
+15:00:31.726                                              
+15:00:31.726 Action                              INFO     Conform cannot test the Action method
+15:00:31.726                                              
+15:00:31.800 DeviceState                         OK       Received 4 operational state properties.
+15:00:31.806 DeviceState                         OK         IsMoving = False
+15:00:31.806 DeviceState                         OK         Position = 8100
+15:00:31.806 DeviceState                         OK         Temperature = 26,3
+15:00:31.806 DeviceState                         OK         TimeStamp = 06.11.2026 14:00:31
+15:00:31.816 DeviceState                         OK       Found all expected operational properties
+15:00:31.816                                              
+15:00:31.816 Properties                                   
+15:00:31.828 Absolute                            OK       True
+15:00:31.830 IsMoving                            OK       False
+15:00:31.838 MaxStep                             OK       8100
+15:00:31.842 MaxIncrement                        OK       8100
+15:00:31.844 Position                            OK       8100
+15:00:31.850 StepSize                            OK       1,11
+15:00:31.853 TempCompAvailable                   OK       True
+15:00:31.856 TempComp Read                       OK       False
+15:00:31.861 TempComp Write                      OK       Successfully turned temperature compensation on
+15:00:31.862 TempComp Write                      OK       Successfully turned temperature compensation off
+15:00:31.867 Temperature                         OK       26,3
+15:00:31.867                                              
+15:00:31.867 Methods                                      
+15:00:31.896 Halt                                OK       Focuser halted OK
+15:00:33.520 Move - TempComp False               OK       Absolute move OK
+15:00:36.622 Move - TempComp True V3             OK       Absolute move OK
+15:00:48.248 Move - To 0                         OK       Reported position: 0.
+15:00:48.279 Move - Below 0                      OK       Movement below 0 was not permitted. (Actually moved to 0)
+15:00:53.834 Move - To MidPoint                  OK       Reported position: 4050.
+15:00:58.879 Move - To MaxStep                   OK       Reported position: 8100.
+15:00:58.911 Move - Above MaxStep                OK       Movement above MaxStep was not permitted. (Actually moved to 8100)
+15:00:58.911                                              
+15:00:58.913 Disconnect from device                       
+15:00:58.937 Disconnect                          OK       Disconnected from device successfully using Disconnect()
+15:00:58.937                                              
+15:00:58.937 Conformance test has finished                
+15:00:58.937                                              
+15:00:58.939 Congratulations, no errors, warnings or issues found: your driver passes ASCOM validation!!          
+
+15:00:58.940 Timing Summary                               See Help for further information.
+15:00:58.940 Timing Summary                               FAST target response time: 0,1 seconds, (configuration and state reporting members).
+15:00:58.941 Timing Summary                               STANDARD target response time: 1,0 second, (property write and asynchronous initiators).
+15:00:58.941 Timing Summary                               EXTENDED target response time: 600,0 seconds, (synchronous methods, ImageArray and ImageArrayVariant).
+15:00:58.941 Timing Summary                               Conform is configured to report both good and bad timing outcomes.
+15:00:58.941                                              
+15:00:58.941 Connect                                      At 15:00:31.077 Connect                  0,028 seconds. ✓ (STANDARD)
+15:00:58.941 InterfaceVersion                             At 15:00:31.630 InterfaceVersion         0,000 seconds. ✓ (FAST)
+15:00:58.941 Connected                                    At 15:00:31.631 Connected                0,001 seconds. ✓ (FAST)
+15:00:58.941 Description                                  At 15:00:31.639 Description              0,006 seconds. ✓ (FAST)
+15:00:58.941 DriverInfo                                   At 15:00:31.645 DriverInfo               0,006 seconds. ✓ (FAST)
+15:00:58.941 DriverVersion                                At 15:00:31.648 DriverVersion            0,003 seconds. ✓ (FAST)
+15:00:58.941 Name                                         At 15:00:31.651 Name                     0,003 seconds. ✓ (FAST)
+15:00:58.941 SupportedActions                             At 15:00:31.724 SupportedActions         0,073 seconds. ✓ (FAST)
+15:00:58.941 DeviceState                                  At 15:00:31.800 DeviceState              0,074 seconds. ✓ (FAST)
+15:00:58.942 Absolute                                     At 15:00:31.828 Absolute                 0,004 seconds. ✓ (FAST)
+15:00:58.942 IsMoving                                     At 15:00:31.830 IsMoving                 0,003 seconds. ✓ (FAST)
+15:00:58.942 MaxStep                                      At 15:00:31.838 MaxStep                  0,008 seconds. ✓ (FAST)
+15:00:58.942 MaxIncrement                                 At 15:00:31.841 MaxIncrement             0,003 seconds. ✓ (FAST)
+15:00:58.942 Position                                     At 15:00:31.844 Position                 0,003 seconds. ✓ (FAST)
+15:00:58.942 TempCompAvailable                            At 15:00:31.853 TempCompAvailable        0,003 seconds. ✓ (FAST)
+15:00:58.942 TempComp Read                                At 15:00:31.856 TempComp Read            0,003 seconds. ✓ (FAST)
+15:00:58.942 TempComp Write                               At 15:00:31.861 TempComp Write           0,005 seconds. ✓ (STANDARD)
+15:00:58.942 Temperature                                  At 15:00:31.867 Temperature              0,004 seconds. ✓ (FAST)
+15:00:58.942 Halt                                         At 15:00:31.896 Halt                     0,027 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 7290                                 At 15:00:31.943 Move to 7290             0,037 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 7290                                 At 15:00:35.104 Move to 7290             0,022 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 0                                    At 15:00:38.239 Move to 0                0,048 seconds. ✓ (STANDARD)
+15:00:58.942 Move to -10                                  At 15:00:48.277 Move to -10              0,028 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 4050                                 At 15:00:48.324 Move to 4050             0,044 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 8100                                 At 15:00:53.864 Move to 8100             0,029 seconds. ✓ (STANDARD)
+15:00:58.942 Move to 8110                                 At 15:00:58.909 Move to 8110             0,029 seconds. ✓ (STANDARD)
+15:00:58.942 Disconnect                                   At 15:00:58.935 Disconnect               0,018 seconds. ✓ (STANDARD)
+15:00:58.942                                              
+15:00:58.942 Congratulations, all members returned within their target response times!!          
+
