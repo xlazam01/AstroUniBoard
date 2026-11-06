@@ -38,3 +38,10 @@ fw-onstepx/.claude/settings.local.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# .NET
+driver/**/bin/
+driver/**/obj/
+driver/**/TestResults/
+*.user
+.vs/
