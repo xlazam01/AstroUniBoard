@@ -53,13 +53,16 @@ def identify(port):
 
 
 def find_port(usb_serial=None):
-    """First 1209:0001 port that identifies as an AstroUniBoard (and has usb_serial, if given)."""
+    """First 1209:0001 port that identifies as an AstroUniBoard. With usb_serial (a board this
+    session already identified) the USB serial number alone selects it and nothing is sent."""
     if list_ports is None:
         return None
     for p in list_ports.comports():
         if p.vid != USB_VID or p.pid != USB_PID:
             continue
-        if usb_serial and (p.serial_number or "").upper() != usb_serial.upper():
+        if usb_serial:
+            if (p.serial_number or "").upper() == usb_serial.upper():
+                return p.device
             continue
         if identify(p.device).startswith(IDENTIFY_PREFIX):
             return p.device
@@ -97,9 +100,11 @@ class Board:
         if self.ser and self.ser.is_open:
             self.ser.close()
 
-    def reconnect(self, timeout=20.0):
+    def reconnect(self, timeout=20.0, identify=True):
         """After a reboot: wait for the same board (same USB serial number, identifies as
-        ASTROUNIBOARD) to come back. Never switches to another device with the same VID/PID."""
+        ASTROUNIBOARD) to come back. Never switches to another device with the same VID/PID.
+        identify=True sends :32# so the firmware accepts other commands again (gate, #58);
+        identify=False leaves the board locked (only :25# was sent)."""
         self.close()
         end = time.time() + timeout
         while time.time() < end:
@@ -112,6 +117,9 @@ class Board:
                 self.port = port
                 self.open()
                 if self.raw(":25#") == "OK#":
+                    if identify:
+                        ident = self.raw(":32#")
+                        assert ident.startswith(IDENTIFY_PREFIX), f"{self.port}: {ident!r}"
                     return
             except (serial.SerialException, OSError):
                 pass

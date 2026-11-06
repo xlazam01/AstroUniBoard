@@ -11,7 +11,7 @@ DRIVER_DEFAULTS = {"F": (900, 450, 4, 0, 30), "R": (650, 325, 16, 0, 0)}
 
 def test_identify(board):
     r = board.cmd(":32#")
-    m = re.fullmatch(r"ASTROUNIBOARD,REV2,FW(\d+)\.(\d+)\.(\d+),1,([0-9A-F]{12}),([0-9A-F]+)#", r)
+    m = re.fullmatch(r"ASTROUNIBOARD,REV2,FW(\d+)\.(\d+)\.(\d+),2,([0-9A-F]{12}),([0-9A-F]+)#", r)
     assert m, r
     assert int(m.group(5), 16) & 0x3 == 0x3, "focuser and rotator caps expected"
     usb = usb_serial_number(board.port)
@@ -222,3 +222,16 @@ def test_unsaved_microstep_change_is_undone_at_boot(board, idle):
     finally:
         board.wait_idle()
         board.set_driver("F", orig)
+
+
+def test_identify_gate_after_reboot(board, idle):
+    """#58: after a reset only :25# and :32# are accepted; everything else is ERR,16 until :32#."""
+    board.ok(":22#")
+    time.sleep(1.0)
+    board.reconnect(identify=False)
+    for c in (":33#", ":50#", ":70#", ":40#", ":51,10#", ":31#", ":22#", ":24#", ":99#"):
+        assert board.cmd(c) == "ERR,16#", c
+    assert board.cmd(":25#") == "OK#"
+    assert board.cmd(":32#").startswith("ASTROUNIBOARD,")
+    assert board.cmd(":33#").startswith("S,")              # unlocked
+    assert board.cmd(":99#") == "ERR,10#"

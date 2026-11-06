@@ -13,6 +13,10 @@ void protoReply(const char* s, int n) {
     PROTOCOL_SERIAL.write((const uint8_t*)s, (size_t)n);
 }
 
+static bool identified = false;   // cleared only by a reset (#58)
+
+void protoSetIdentified() { identified = true; }
+
 void protoOk() { protoReply("OK#", 3); }
 
 void protoError(FwError code) {
@@ -101,6 +105,9 @@ void Protocol::handleCommand() {
     if (len < 2 || !isDigit(buf[0]) || !isDigit(buf[1])) { protoError(FW_ERR_BAD_FORMAT); return; }
     const uint8_t cmd = (uint8_t)((buf[0] - '0') * 10 + (buf[1] - '0'));
     char* params = &buf[2];
+
+    // A device on the shared test PID 1209:0001 must be identified before it acts on anything.
+    if (!identified && cmd != 25 && cmd != 32) { protoError(FW_ERR_NOT_IDENTIFIED); return; }
 
     if (cmd >= 90)      protocolEnv(cmd, params);
     else if (cmd >= 70) protocolRotator(cmd, params);

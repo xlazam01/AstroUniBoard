@@ -22,5 +22,6 @@ enum FwError : uint8_t {
     FW_ERR_NOT_SUPPORTED   = 12,  // command known but not changeable at runtime
     FW_ERR_MOTOR_STALL     = 13,  // sticky: StallGuard stopped a move
     FW_ERR_SENSOR          = 14,  // sensor missing or giving bad data (no valid reading)
-    FW_ERR_IMU_VERTICAL    = 15   // optical axis too close to vertical: roll undefined
+    FW_ERR_IMU_VERTICAL    = 15,  // optical axis too close to vertical: roll undefined
+    FW_ERR_NOT_IDENTIFIED  = 16   // command before ":32#" identify since power-on (same number in OpenWheel)
 };
