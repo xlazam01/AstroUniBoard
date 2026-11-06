@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstroUniBoard.Core", "Astro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstroUniBoard.Core.Tests", "AstroUniBoard.Core.Tests\AstroUniBoard.Core.Tests.csproj", "{B4724077-1BDD-4DB1-9CF0-05DBAA97E56F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstroUniBoard.DebugApp", "AstroUniBoard.DebugApp\AstroUniBoard.DebugApp.csproj", "{30C6E95D-C877-44F6-BDB6-8CF055AE18C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstroUniBoard.DebugApp.Tests", "AstroUniBoard.DebugApp.Tests\AstroUniBoard.DebugApp.Tests.csproj", "{E4B1068F-7CDF-43BE-8A7A-FA6542D32799}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,13 @@ Global
 		{B4724077-1BDD-4DB1-9CF0-05DBAA97E56F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4724077-1BDD-4DB1-9CF0-05DBAA97E56F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4724077-1BDD-4DB1-9CF0-05DBAA97E56F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30C6E95D-C877-44F6-BDB6-8CF055AE18C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30C6E95D-C877-44F6-BDB6-8CF055AE18C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30C6E95D-C877-44F6-BDB6-8CF055AE18C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30C6E95D-C877-44F6-BDB6-8CF055AE18C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4B1068F-7CDF-43BE-8A7A-FA6542D32799}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4B1068F-7CDF-43BE-8A7A-FA6542D32799}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4B1068F-7CDF-43BE-8A7A-FA6542D32799}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4B1068F-7CDF-43BE-8A7A-FA6542D32799}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
