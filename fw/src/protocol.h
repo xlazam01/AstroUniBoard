@@ -25,6 +25,11 @@ private:
     void handleCommand();
 };
 
+// --- identify gate (#58): after power-on only :25# ping and :32# identify are accepted; everything
+// else answers ERR,16 until :32# has been answered. Re-locks only at reset (a port open cannot be
+// told apart from a host reconfiguring the port: both send SET_LINE_CODING). ---
+void protoSetIdentified();
+
 // --- replies (exactly one per command; each is a single USB write) ---
 void protoReply(const char* s, int n);
 void protoOk();                                   // "OK#"

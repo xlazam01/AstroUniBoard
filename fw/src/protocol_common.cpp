@@ -139,6 +139,7 @@ void protocolCommon(uint8_t cmd, char* params) {
             deviceSerial(serial, sizeof(serial));
             protoPrintf("ASTROUNIBOARD,%s,%s,%d,%s,%X#", BOARD_MODEL, FIRMWARE_ID, PROTOCOL_VERSION, serial,
                         (unsigned)FIRMWARE_CAPS);
+            protoSetIdentified();   // unlocks every other command (#58)
             break;
         }
 
