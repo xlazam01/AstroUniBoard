@@ -6,6 +6,49 @@
 |-----|--------|-----|
 | 1.x | Prototype boards (OnStepX firmware) | `f313306` |
 | **2.0** | **Frozen 2026-11-06 for bring-up testing.** Change only through a new revision. | tag `hw-rev2.0` |
+| 2.1 | Schematic and PCB done, DRC clean apart from the overlapping M2/M3 mounting holes (as in 2.0). | — |
+
+Rev 2.1 changes:
+- **+12V sense on PB10 (ADC1_IN11, pin 22), firmware-visible.** R33 100k from `+12V` and R34 10k to GND, with
+  C70 100 nF at the pin (net `V12_SENSE`). V12 = V_PB10 × 11. Full scale is 36.3 V at VDDA = 3.3 V; 12 V reads 1.09 V,
+  about 1350 counts at 8.9 mV/LSB. The divider draws 0.1 mA. With 1 % parts the reading is within about 2 %;
+  calibrate against a meter if a tighter limit is needed. Rev 2.0 boards have no divider (PB10 unconnected).
+  PB10 was picked because it is the free ADC pin closest to the divider's place on the PCB; PA0, PA6 and PA7
+  stay free (PA6 is the TMC2209 INDEX pin on the OpenWheel boards).
+- R32 (47R, 0402) in series between PB9 (`SHT_PWR`) and the SHT31 supply node (`SHT_VDD`: U8 VDD/ADDR/nRESET
+  and C69). It limits the C69 inrush peak on PB9 from roughly 60–80 mA to roughly 35 mA for a few µs; the drop
+  at the SHT31's 1.5 mA maximum measuring current is about 70 mV. No firmware impact.
+- The Y2 load caps C67/C68 (already DNP in rev 2.0) are removed from the schematic.
+- J6 is drawn as a 2-pin connector with value `XT30PW-M` (its footprint was always the XT30; the symbol was a
+  barrel jack). JP4/JP5 values are `Open`/`Bridged`.
+
+### Rev 2.1 BOM (JLCPCB assembly)
+
+Every fitted part has an `LCSC` field, in the schematic and on the PCB footprints, so the JLC fabrication
+toolkit fills the BOM without manual matching. Mounting holes H1–H8 are excluded from the BOM and position file.
+Parts were picked JLC Basic first, then Preferred, then Extended; values and numbers follow OpenWheel and the
+UpBox parts list where they overlap. Snapshot 2026-11-06: 17 Basic, 3 Preferred, 22 Extended unique parts.
+
+Value style is `<value>` or `<value>/<voltage>`, for example `100nF`, `100nF/50V`, `10uF/10V`. The voltage is
+in the value wherever the part differs by rating:
+
+| Value | LCSC | Where |
+|-------|------|-------|
+| `10uF` (6.3 V, Basic) | C15525 | +3.3V only |
+| `10uF/10V` (Extended) | C315248 | +5V, +5V3, VBUS_DN, TMC2209 5VOUT. A 6.3 V part at 5.3 V keeps too little capacitance for the buck output. |
+| `100nF` (16 V, Basic) | C1525 | logic rails |
+| `100nF/50V` (Basic) | C307331 | +12V, Vdrive, bootstrap, TMC2209 |
+
+Choices to confirm before ordering:
+- **U5 STM32G0B1CBT6 (C2847904) has no JLC stock** (checked 2026-11-06). Options: JLC global sourcing or a
+  consigned part, or STM32G0B1CCT6 (C5270241, 256 KB, same pinout, only 8 in stock). Avoid the `…N` variants
+  (different pinout).
+- **L4 = 10 µH, IHLP2020BZER100M11 (C844984).** The footprint is IHLP-2020; no inductance was recorded before.
+  10 µH gives about 50 % ripple at 1 A, 550 kHz, 12 V → 5.3 V.
+- **D1–D4 = red 0402 LED, NCD0402R1 (C130719, Extended).** There is no Basic red LED in 0402. A 0603 footprint
+  would allow C2286 (Basic) and save one Extended fee.
+- **R23 1k78 (C113478) is Extended.** Changing the divider to a Basic E24 value would move VOUT.
+- **D23 = SS34 (C8678, Basic)**, 40 V 3 A Schottky in SMA.
 
 Rev 2.0 is pin-compatible with rev 1 for firmware: every MCU pin has the same function.
 Differences the firmware can see:
@@ -62,7 +105,7 @@ Baud rate: 460800. TMC2209 addresses hardwired via MS1/MS2: AXIS3 = addr 1, AXIS
 
 | Device | Address | Purpose |
 |--------|---------|---------|
-| 24AA64 | 0x50 | 8 KB NV storage (focuser/rotator position, settings). The fw-onstepx pinmap comment says 0x57 — confirm with an I2C bus scan |
+| 24AA64 | 0x50 | 8 KB NV storage (focuser/rotator position, settings). 24AA64T SOT-23 package has no address pins, so the address is fixed |
 | SHT31 on-board (U8) | 0x45 (rev 2.0), 0x44 (rev 1) | Temperature + humidity, ADDR tied to the PB9 supply |
 | SHT31 external (J9) | 0x44 | Optional, rev 2.0 only |
 | MPU-6000 | 0x68 | IMU (rotator gravity homing) |
@@ -70,6 +113,7 @@ Baud rate: 460800. TMC2209 addresses hardwired via MS1/MS2: AXIS3 = addr 1, AXIS
 | Function | Pin | Notes |
 |----------|-----|-------|
 | SHT_PWR | PB9 | SHT31 supply, active HIGH. On rev 2.0 the on-board sensor answers only while it is on |
+| V12_SENSE | PB10 (ADC1_IN11) | +12V input / 11 (R33 100k, R34 10k, C70 100 nF). Rev 2.1 only; unconnected on rev 2.0 |
 
 ## USB (Native USB CDC)
 
