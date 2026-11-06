@@ -56,23 +56,28 @@ namespace AstroUniBoard.Ascom
                 case "ImuHome": r = c.RotatorImuHome(WaitMs); break;
                 case "ImuCalibrate": r = c.ImuCalibrate(WaitMs); break;
                 case "Reboot": r = c.Reboot(WaitMs); break;
-                case "EnterDfu": r = c.EnterDfu(WaitMs); break;
+                case "EnterDfu":
+                    r = c.EnterDfu(WaitMs);
+                    // Core stops looking after :31#; the clients still hold their connections, so keep
+                    // looking (with backoff) and the board is found again when it leaves the bootloader.
+                    if (r.Success) System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => { if (Server.ConnectionClients > 0) Server.Controller.Connect(); });
+                    break;
                 default: throw new ActionNotImplementedException(actionName);
             }
             Server.Log("action " + match + ": " + r);
             return r.Success ? OkReply : ErrorPrefix + r.Message;
         }
 
-        /// <summary>Sends ":NN...#" and returns the board's reply line including the '#', or "ERROR: ...".</summary>
+        /// <summary>Sends ":NN...#" and returns the board's reply without the '#' ("OK", "ERR,7", "S,1,..."), or "ERROR: ...".</summary>
         public static string Raw(string command)
         {
             string cmd = (command ?? string.Empty).Trim();
             if (!Server.Controller.Snapshot.IsConnected) return ErrorPrefix + "board is not connected";
             Reply reply;
             CommandResult r = Server.Controller.Raw(cmd, out reply, WaitMs);
-            Server.Log("raw " + cmd + " -> " + (r.Success && reply != null ? reply + "#" : "failed: " + r.Message));
+            Server.Log("raw " + cmd + " -> " + (r.Success && reply != null ? reply.ToString() : "failed: " + r.Message));
             if (!r.Success || reply == null) return ErrorPrefix + r.Message;
-            return reply + "#";
+            return reply.ToString();
         }
 
         // ---------------------------------------------------------------- Log
@@ -133,8 +138,8 @@ namespace AstroUniBoard.Ascom
                 j.Num("stateCode", (int)st.State);
                 j.Num("focuserPosition", st.FocuserPosition);
                 j.Num("focuserTarget", st.FocuserTarget);
-                j.Num("rotatorAngleCdeg", st.RotatorAngle);
-                j.Num("rotatorTargetCdeg", st.RotatorTarget);
+                j.Num("rotatorAngle", st.RotatorAngle);   // cdeg 0..35999
+                j.Num("rotatorTarget", st.RotatorTarget); // cdeg, -1 = none
                 j.Num("error", st.Error);
                 j.Str("errorText", st.Error == 0 ? null : BoardErrors.Describe(st.Error));
                 j.Num("flags", (int)st.Flags);
