@@ -7,6 +7,12 @@
 #define PROTOCOL_VERSION     2   // 2: identify gate (ERR,16), IMU calibration with three captures
 #define BOARD_MODEL          "REV2"
 
+// Hardware revision the build is for: 20 = rev 2.0 (env rev2), 21 = rev 2.1 (env rev21, -D HW_REV=21).
+// Rev 2.1 adds the +12 V sense divider on PB10 (docs/HARDWARE.md); BOARD_MODEL stays REV2 for both.
+#ifndef HW_REV
+#define HW_REV               20
+#endif
+
 // identify caps bits (PROTOCOL.md §3.1): what this firmware build supports
 #define CAP_FOCUSER          0x1
 #define CAP_ROTATOR          0x2
@@ -44,6 +50,13 @@
 
 #define PIN_STATUS_LED       PB12   // active LOW
 #define PIN_ACT_LED          PB4    // active LOW
+
+#if HW_REV >= 21
+// +12 V sense (rev 2.1): R33 100k / R34 10k, V12 = V_PB10 x 11. Moves are refused below V12_MIN_MV (#74).
+#define PIN_V12_SENSE        PB10
+#define V12_DIVIDER          11
+#define V12_MIN_MV           9000
+#endif
 
 // Q15: positions are written to the EEPROM this long after an axis stops
 #define POSITION_SAVE_DELAY_MS  2000

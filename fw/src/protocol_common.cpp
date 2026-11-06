@@ -104,6 +104,9 @@ void protocolCommon(uint8_t cmd, char* params) {
     switch (cmd) {
         case 22:  // reboot
         case 31:  // reboot into the USB DFU bootloader (magic word + reset)
+            // #76: never cut a move; the host halts first (:30#) and waits for state 1
+            if (a.n != 0) { protoError(FW_ERR_BAD_PARAM); break; }
+            if (statusAnyBusy()) { protoError(FW_ERR_BUSY); break; }
             protoOk();
             PROTOCOL_SERIAL.flush();
             delay(50);   // let the USB host fetch the reply before the device drops off the bus

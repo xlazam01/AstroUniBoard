@@ -33,6 +33,7 @@ E_MOTOR_STALL = 13
 E_SENSOR = 14
 E_IMU_VERTICAL = 15
 E_NOT_IDENTIFIED = 16
+E_POS_UNVERIFIED = 17     # AstroUniBoard only (#75, #77)
 
 # --- status (fw/src/status.h) -----------------------------------------------------------------
 ST_INIT, ST_IDLE, ST_FOC_MOVING, ST_ROT_MOVING, ST_ROT_HOMING, ST_HALTING = range(6)
@@ -45,6 +46,7 @@ F_SHT_EXTERNAL = 1 << 5
 F_IMU_OK = 1 << 6
 F_IMU_UNCAL = 1 << 7
 F_SAFE_MODE = 1 << 8
+F_ROT_SUSPECT = 1 << 9    # rotator angle known untrustworthy (#75)
 
 FOC, ROT = 0, 1
 PROTO_MAX_LINE = 46
@@ -66,6 +68,8 @@ ENV_PERIOD_S = 2.0
 TMC_MAX_RUN_MA = 1500
 DRV_IDLE_OFF_MAX_S = 3600
 IMU_INVALID = -99999
+SAFE_JOG_FOC_STEPS = 200  # fw/src/move_guard.h
+SAFE_JOG_ROT_CDEG = 1000
 TICK_S = 0.01  # firmware loop granularity of the model
 
 # SHT31 status (fw/src/env_sht31.h)
@@ -107,6 +111,7 @@ class Settings:
     rot_home_tol: int = 50
     env_select: int = 0           # 0 auto, 1 on-board, 2 external
     led: int = 100
+    rot_guard: int = 1            # #75: refuse rotator moves while the angle is suspect (:97 / :98)
 
     @staticmethod
     def from_dict(d: dict) -> "Settings":
@@ -125,7 +130,9 @@ class Nv:
     foc_moving: bool = False
     foc_unverified: bool = False
     rot_cdeg: int = 0
+    rot_saved: bool = False
     rot_moving: bool = False
+    rot_unverified: bool = False      # saved as suspect (stall, fault stop), #75
     imu_cal: Optional[dict] = None
 
 
@@ -153,6 +160,15 @@ class Config:
 
 
 # --- small helpers copied from the firmware -----------------------------------------------------
+def move_guard(safe: bool, suspect: bool, guard_on: bool, absolute: bool, delta: int, jog_limit: int) -> int:
+    """fw/src/move_guard.cpp: E_OK or E_POS_UNVERIFIED."""
+    if not suspect:
+        return E_OK
+    if safe:
+        return E_POS_UNVERIFIED if absolute or abs(delta) > jog_limit else E_OK
+    return E_POS_UNVERIFIED if guard_on else E_OK
+
+
 def _div_round(num: int, den: int) -> int:
     return (num + den // 2) // den if num >= 0 else -((-num + den // 2) // den)
 
@@ -333,6 +349,7 @@ class Axis:
         self.stopped = False       # justStopped()
         self.stop_t = 0.0
         self.start_t = 0.0
+        self.lead_left = 0         # leadLeft(): lead steps not run (halt inside the take-up)
 
     def busy(self) -> bool:
         return self.m is not None
@@ -359,6 +376,7 @@ class Axis:
     def update(self, t: float):
         if self.m is not None and self.m.done(t):
             self.pos = self.m.position(self.m.t_end)
+            self.lead_left = max(0, self.m.lead - self.m.steps(self.m.t_end))
             self.stop_t = self.m.t_end
             self.m = None
             self.stopped = True
@@ -380,6 +398,7 @@ class Device:
             nv = Nv()
             if not self.cfg.fresh:
                 nv.foc_pos, nv.foc_saved = self.cfg.focuser_pos, True
+                nv.rot_saved = True
                 nv.imu_cal = {"valid": 1, "phys0": 0}
         self.nv = nv
         # the physical world (survives reboots)
@@ -409,7 +428,7 @@ class Device:
         self.identified = False
         self.sticky = E_OK
         self.reset_latched = False
-        eeprom = self.cfg.eeprom_ok
+        eeprom = self.cfg.eeprom_ok and not safe     # safe mode never calls nvBegin()
         if eeprom and self.nv.settings is not None:
             self.s = Settings.from_dict(self.nv.settings)
         else:
@@ -424,6 +443,7 @@ class Device:
         self.foc.pos = p
         self.foc_unverified = not (eeprom and self.nv.foc_saved and not self.nv.foc_moving and not self.nv.foc_unverified)
         self.foc_last_dir = 0
+        self.foc_move_dir = 0
         self.foc_save_pending = False
         self.foc_idle_since = now
         # rotator (fw/src/rotator.cpp rotatorBegin): the camera stays where it physically is
@@ -436,6 +456,7 @@ class Device:
         self.rot_halt_requested = False
         self.rot_last_complete = True
         self.rot_unverified = True
+        self.rot_suspect = not (eeprom and self.nv.rot_saved and not self.nv.rot_moving and not self.nv.rot_unverified)
         self.rot_save_pending = False
         self.rot_idle_since = now
         self.seq = None
@@ -501,13 +522,16 @@ class Device:
 
     # ---------------------------------------------------------------- persistence
     def _nv_write(self, **kw):
-        if not self.cfg.eeprom_ok:
+        if not self.cfg.eeprom_ok or self.safe:
             return
         for k, v in kw.items():
             setattr(self.nv, k, v)
 
     def _focuser_update(self, t: float):
         if self.foc.just_stopped():
+            if self.foc_move_dir and self.foc.lead_left == 0:   # take-up done (#77)
+                self.foc_last_dir = self.foc_move_dir
+            self.foc_move_dir = 0
             self.foc_save_pending = True
             self.foc_idle_since = t
         if self.foc_save_pending and not self.foc.busy() and t - self.foc_idle_since >= POSITION_SAVE_DELAY_S:
@@ -516,12 +540,15 @@ class Device:
                            foc_moving=False, foc_unverified=self.foc_unverified)
 
     # ---------------------------------------------------------------- focuser (fw/src/focuser.cpp)
-    def foc_move_to(self, target: int) -> int:
+    def foc_move_to(self, target: int, absolute: bool = True) -> int:
         if target < 0 or target > self.s.foc_max:
             return E_BAD_PARAM
         if self.any_busy():
             return E_BUSY
         pos = self.foc.pos
+        g = move_guard(self.safe, self.foc_unverified, False, absolute, target - pos, SAFE_JOG_FOC_STEPS)
+        if g != E_OK:
+            return g
         if target == pos:
             return E_OK
         if self.drv_temp[FOC] < 0:
@@ -532,7 +559,7 @@ class Device:
         self._nv_write(foc_moving=True)
         if not self.foc.move_to(self.t, target, lead, self.s.foc_speed, self.s.foc_accel):
             return E_BUSY
-        self.foc_last_dir = d
+        self.foc_move_dir = d
         self.foc_save_pending = False
         return E_OK
 
@@ -579,26 +606,38 @@ class Device:
         self.rot_save_pending = True
         self.rot_idle_since = self.t
 
-    def _rot_start_move(self, target: int) -> bool:
+    def _rot_driver_ready(self) -> bool:
+        """#74: driver answering (rev 2.0 has no +12 V sense); raises sticky 5 otherwise."""
+        if self.drv_temp[ROT] < 0:
+            self.raise_error(E_MOTOR_DRIVER)
+            return False
+        return True
+
+    def _rot_guard(self, absolute: bool, delta: int = 0) -> int:
+        return move_guard(self.safe, self.rot_suspect, bool(self.s.rot_guard), absolute, delta, SAFE_JOG_ROT_CDEG)
+
+    def _rot_start_move(self, target: int) -> int:
         spk = self.s.rot_spk
         steps = rot_cdeg_to_steps(target, spk)
         if self.rot.busy():
-            return False
+            return E_BUSY
         if steps == self.rot.pos:
             if target != self.rot_angle:
                 self.rot_angle = target
                 self._rot_schedule_save()
             self.rot_last_complete = True
-            return True
+            return E_OK
+        if not self._rot_driver_ready():
+            return E_MOTOR_DRIVER
         self._nv_write(rot_moving=True)
         if not self.rot.move_to(self.t, steps, 0, rot_rate_to_steps(self.s.rot_speed, spk),
                                 rot_rate_to_steps(self.s.rot_accel, spk)):
-            return False
+            return E_BUSY
         self.rot_moving = True
         self.rot_target = target
         self.rot_halt_requested = False
         self.rot_save_pending = False
-        return True
+        return E_OK
 
     def _rot_check_move_end(self):
         if not self.rot_moving or self.rot.busy():
@@ -611,7 +650,7 @@ class Device:
         else:
             self.rot_angle = rot_steps_to_cdeg(pos, self.s.rot_spk)
             if not self.rot_halt_requested:
-                self.rot_unverified = True
+                self.rot_unverified = self.rot_suspect = True
         self.rot_halt_requested = False
         self._rot_schedule_save()
 
@@ -619,7 +658,7 @@ class Device:
         self.camera_offset += self.rot_angle
         self.rot_angle = 0
         self.rot.pos = 0
-        self.rot_unverified = False
+        self.rot_unverified = self.rot_suspect = False
         self._rot_schedule_save()
 
     def _abort_seq(self, err: int):
@@ -672,7 +711,7 @@ class Device:
             if target == self.rot_angle:
                 self._abort_seq(E_HOME_TIMEOUT)
                 return
-        if not self._rot_start_move(target):
+        if self._rot_start_move(target) != E_OK:
             self._abort_seq(E_HOME_TIMEOUT)
             return
         self.home_moves += 1
@@ -692,7 +731,7 @@ class Device:
             nxt = {"cal_settle0": (self.cal_start + CAL_STEP_CDEG, "cal_move90"),
                    "cal_settle90": (self.cal_start + 2 * CAL_STEP_CDEG, "cal_move180"),
                    "cal_settle180": (self.cal_start, "cal_moveback")}[q]
-            if not self._rot_start_move(nxt[0]):
+            if self._rot_start_move(nxt[0]) != E_OK:
                 self._abort_seq(E_CALIB_FAILED)
                 return
             self.seq = nxt[1]
@@ -724,25 +763,32 @@ class Device:
             self.rot_imu_home()
         if self.rot_save_pending and not self._rot_busy() and t - self.rot_idle_since >= POSITION_SAVE_DELAY_S:
             self.rot_save_pending = False
-            self._nv_write(rot_cdeg=self.rot_angle, rot_moving=False)
+            self._nv_write(rot_cdeg=self.rot_angle, rot_saved=True, rot_moving=False,
+                           rot_unverified=self.rot_suspect)
 
     def rot_move_to(self, target: int) -> int:
         if target < 0 or target > 35999:
             return E_BAD_PARAM
         if self.any_busy():
             return E_BUSY
+        g = self._rot_guard(True)
+        if g != E_OK:
+            return g
         t = wrap_plan_target(self.rot_angle, target, self.s.rot_wrap_min, self.s.rot_wrap_max)
         if t is None:
             return E_BAD_PARAM
-        return E_OK if self._rot_start_move(t) else E_BUSY
+        return self._rot_start_move(t)
 
     def rot_move_by(self, delta: int) -> int:
         if self.any_busy():
             return E_BUSY
+        g = self._rot_guard(False, delta)
+        if g != E_OK:
+            return g
         t = self.rot_angle + delta
         if t < self.s.rot_wrap_min or t > self.s.rot_wrap_max:
             return E_BAD_PARAM
-        return E_OK if self._rot_start_move(t) else E_BUSY
+        return self._rot_start_move(t)
 
     def rot_halt(self):
         self.seq = None
@@ -765,7 +811,7 @@ class Device:
         self.camera_offset += self.rot_angle - cdeg   # the camera does not move
         self.rot_angle = cdeg
         self.rot.pos = rot_cdeg_to_steps(cdeg, self.s.rot_spk)
-        self.rot_unverified = False
+        self.rot_unverified = self.rot_suspect = False
         self._rot_schedule_save()
         return E_OK
 
@@ -778,6 +824,8 @@ class Device:
             return E_NOT_CALIBRATED
         if self.imu_near_vertical():
             return E_IMU_VERTICAL
+        if not self._rot_driver_ready():
+            return E_MOTOR_DRIVER
         self.home_moves = 0
         self._begin_settle("home_settle")
         return E_OK
@@ -789,8 +837,13 @@ class Device:
             return E_SENSOR
         if self.imu_near_vertical():
             return E_IMU_VERTICAL
+        g = self._rot_guard(True)
+        if g != E_OK:
+            return g
         if self.rot_angle + 2 * CAL_STEP_CDEG > self.s.rot_wrap_max:
             return E_BAD_PARAM
+        if not self._rot_driver_ready():
+            return E_MOTOR_DRIVER
         self.cal_start = self.rot_angle
         self.cal_caps = []
         self._begin_settle("cal_settle0")
@@ -809,7 +862,7 @@ class Device:
 
     def _cal(self) -> Optional[dict]:
         """Calibration in use: loaded from the EEPROM at boot, or a new one that failed to save."""
-        return self.cal_ram or (self.nv.imu_cal if self.cfg.eeprom_ok else None)
+        return self.cal_ram or (self.nv.imu_cal if self.cfg.eeprom_ok and not self.safe else None)
 
     def _imu_settled(self) -> bool:
         return self._imu_answering() and self.t - self.imu_filter_t >= IMU_SETTLE_S
@@ -957,6 +1010,8 @@ class Device:
             f |= F_FOC_UNVERIFIED
         if self.rot_unverified:
             f |= F_ROT_UNVERIFIED
+        if self.rot_suspect:
+            f |= F_ROT_SUSPECT
         if self.nv_fault:
             f |= F_EEPROM_FAULT
         if self.hk_warnings():
@@ -1020,12 +1075,16 @@ class Device:
             return self._err(E_BAD_PARAM)
         n = len(a)
         if cmd in (22, 31):
+            if n:
+                return self._err(E_BAD_PARAM)
+            if self.any_busy():                    # #76: the host halts first
+                return self._err(E_BUSY)
             self.pending_reset = "dfu" if cmd == 31 else "reboot"
             return "OK#"
         if cmd == 23:
             if n:
                 return self._err(E_BAD_PARAM)
-            if not self.cfg.eeprom_ok:
+            if not self.cfg.eeprom_ok or self.safe:
                 return self._err(E_EEPROM)
             self.nv.settings = asdict(self.s)
             return "OK#"
@@ -1163,7 +1222,7 @@ class Device:
             t = self.foc.position(self.t) + v
             if t < 0 or t > s.foc_max:
                 return self._err(E_BAD_PARAM)
-            return self._reply(self.foc_move_to(t))
+            return self._reply(self.foc_move_to(t, absolute=False))
         if cmd == 55:
             tgt, pos = self.foc_target(), self.foc.position(self.t)
             floor = tgt if self.foc.busy() and tgt > pos else pos
@@ -1245,7 +1304,7 @@ class Device:
         a = proto_split(params)
         if a is None:
             return self._err(E_BAD_PARAM)
-        if 90 <= cmd <= 96 and cmd != 93 and len(a):
+        if 90 <= cmd <= 97 and cmd != 93 and len(a):
             return self._err(E_BAD_PARAM)
         if cmd == 90:
             sel = self.env_selected()
@@ -1282,6 +1341,14 @@ class Device:
             g0 = self.imu_accel(cal["phys0"])
             cz = int(round(1000.0 * math.sin(math.radians(self.altitude)) + 5))
             return "C,1,%d,%d,%d,0,0,-10000,12,-8,%d#" % (*g0, cz)
+        if cmd == 97:                              # rotator move guard (#75)
+            return f"{1 if self.s.rot_guard else 0}#"
+        if cmd == 98:
+            v = proto_int32(a[0]) if len(a) == 1 else None
+            if v is None or v < 0 or v > 1:
+                return self._err(E_BAD_PARAM)
+            self.s.rot_guard = v
+            return "OK#"
         return self._err(E_UNKNOWN_CMD)
 
     def take_pending_reset(self) -> Optional[str]:

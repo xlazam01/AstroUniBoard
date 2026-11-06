@@ -39,6 +39,7 @@ public:
     uint32_t speedNow() const;          // current step rate, steps/s (StallGuard minimum speed check)
     uint32_t moveStartMs() const;       // millis() when the running / last move started
     bool    justStopped();              // true once after a move ended (normally or halted)
+    uint32_t leadLeft() const;          // lead steps not yet run (> 0 after a halt inside the take-up)
 
     void setSpeed(uint32_t stepsPerSec);    // takes effect at the next move
     void setAccel(uint32_t stepsPerSec2);

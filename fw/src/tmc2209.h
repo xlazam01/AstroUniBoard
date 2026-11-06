@@ -6,7 +6,7 @@
 #include "error_codes.h"
 #include "settings.h"
 
-// Sense resistors on the board: 0.11 ohm (HW/astrouniboard.kicad_sch) -> about 1.77 A RMS full scale.
+// Sense resistors on the board: 0.11 ohm (hw/astrouniboard.kicad_sch) -> about 1.77 A RMS full scale.
 #define TMC_RSENSE_OHM   0.11f
 #define TMC_MAX_RUN_MA   1500      // upper limit accepted by :48 (run and hold), conservative for board cooling
 

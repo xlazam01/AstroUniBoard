@@ -46,6 +46,7 @@ DeviceStatus statusGet() {
     uint16_t f = 0;
     if (focuserUnverified()) f |= FLAG_FOC_UNVERIFIED;
     if (rotatorUnverified()) f |= FLAG_ROT_UNVERIFIED;
+    if (rotatorSuspect()) f |= FLAG_ROT_SUSPECT;
     if (nvFault()) f |= FLAG_EEPROM_FAULT;
     if (hkWarnings()) f |= FLAG_HK_WARNING;
     if (safe) {

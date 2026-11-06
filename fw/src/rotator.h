@@ -11,12 +11,12 @@
 void rotatorBegin();               // after nvBegin(), tmcBegin(), imuBegin(): saved angle, flag 1 set
 void rotatorUpdate();              // main loop: end of move, homing / calibration steps, 2 s idle save, boot home
 
-FwError rotatorMoveTo(int32_t target0to35999);   // :71, cable-wrap rule
+FwError rotatorMoveTo(int32_t target0to35999);   // :71, cable-wrap rule; guard #75/#77, driver check #74
 FwError rotatorMoveBy(int32_t deltaCdeg);         // :72, target inside wrapMin..wrapMax
 void    rotatorHalt();                            // also aborts homing / calibration
-FwError rotatorSync(int32_t signedCdeg);          // :76, clears "unverified"
-FwError rotatorImuHome();      // :77: FW_OK / FW_ERR_NOT_CALIBRATED / FW_ERR_SENSOR / FW_ERR_IMU_VERTICAL / FW_ERR_BUSY
-FwError rotatorImuCalibrate(); // :95: FW_OK / FW_ERR_SENSOR / FW_ERR_IMU_VERTICAL / FW_ERR_BUSY
+FwError rotatorSync(int32_t signedCdeg);          // :76, clears "unverified" and "suspect"
+FwError rotatorImuHome();      // :77: FW_OK / FW_ERR_NOT_CALIBRATED / FW_ERR_SENSOR / FW_ERR_IMU_VERTICAL / FW_ERR_BUSY / FW_ERR_MOTOR_DRIVER
+FwError rotatorImuCalibrate(); // :95: FW_OK / FW_ERR_SENSOR / FW_ERR_IMU_VERTICAL / FW_ERR_BUSY / FW_ERR_POS_UNVERIFIED / FW_ERR_BAD_PARAM / FW_ERR_MOTOR_DRIVER
 
 int32_t rotatorAngle();            // signed cdeg
 int32_t rotatorTarget();           // signed target cdeg of the running move, ROT_NO_TARGET when none
@@ -24,6 +24,7 @@ bool    rotatorBusy();             // moving, halting, homing or calibrating
 bool    rotatorHalting();
 bool    rotatorHoming();           // state 4: IMU homing or IMU calibration
 bool    rotatorUnverified();       // status flag 1
+bool    rotatorSuspect();          // status flag 9 (#75): saved angle known to be untrustworthy
 
 void rotatorApplySettings();       // push settings.rot speed/accel/reverse/idle-off to the axis (:24, load)
 // :48 changed the microsteps: rescale stepsPer1000Deg by newUsteps/oldUsteps (angle stays)

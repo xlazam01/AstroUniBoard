@@ -9,9 +9,13 @@
 #define HK_WARN_DRV_OTPW    0x02
 #define HK_WARN_DRV_RESET   0x04
 #define HK_WARN_NO_CRYSTAL  0x08
+#define HK_WARN_V12_LOW     0x10   // rev 2.1 builds only: +12 V below V12_MIN_MV at the last sample (#74)
 
 void     hkBegin();
 void     hkUpdate();                // main loop; samples while no axis moves
 int16_t  hkMcuTempDeciC();
 uint16_t hkVddaMv();
 uint8_t  hkWarnings();              // HK_WARN_* (includes tmcWarnings() and the crystal state)
+// Motor supply check before a move (#74): rev 2.1 samples +12 V now and returns false below
+// V12_MIN_MV; rev 2.0 has no sense divider and always returns true.
+bool     hkMotorSupplyOk();

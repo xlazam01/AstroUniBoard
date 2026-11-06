@@ -2,7 +2,12 @@
 // direction change, position persistence (Q15).
 //
 // Decisions:
-//  - Backlash: the first move after boot takes up no backlash (last direction unknown).
+//  - Backlash: the first move after boot takes up no backlash (last direction unknown). The
+//    direction of a move counts as "last direction" only once its take-up (lead steps) has run in
+//    full: a halt inside the take-up keeps the previous direction, so the next move repeats it (#77).
+//  - Safe mode (#77): until :56 sync, absolute moves are refused and relative moves are limited to
+//    +-SAFE_JOG_FOC_STEPS (FW_ERR_POS_UNVERIFIED, move_guard.h).
+//  - rev 2.1: a move is refused with FW_ERR_MOTOR_DRIVER when +12 V is low (#74).
 //  - Driver not answering when a move is requested: the config is re-applied once; if the driver
 //    still does not answer, the move is refused with FW_ERR_MOTOR_DRIVER (also raised sticky),
 //    so the position never counts steps that a dead driver did not make.
@@ -14,6 +19,8 @@
 #include "focuser.h"
 #include "axis.h"
 #include "config.h"
+#include "housekeeping.h"
+#include "move_guard.h"
 #include "nv_store.h"
 #include "settings.h"
 #include "status.h"
@@ -21,6 +28,7 @@
 
 static bool     unverified = true;
 static int8_t   lastDir = 0;          // +1 / -1 direction of the last move, 0 unknown
+static int8_t   moveDir = 0;          // direction of the running move, 0 none
 static bool     savePending = false;
 static uint32_t idleSince = 0;
 
@@ -34,6 +42,7 @@ void focuserBegin() {
     axisFoc.setPosition(p);
     unverified = !sp.focValid;
     lastDir = 0;
+    moveDir = 0;
     savePending = false;
     focuserApplySettings();
 }
@@ -41,6 +50,8 @@ void focuserBegin() {
 void focuserUpdate() {
     const uint32_t now = millis();
     if (axisFoc.justStopped()) {
+        if (moveDir && axisFoc.leadLeft() == 0) lastDir = moveDir;   // take-up done
+        moveDir = 0;
         savePending = true;
         idleSince = now;
     }
@@ -50,13 +61,16 @@ void focuserUpdate() {
     }
 }
 
-FwError focuserMoveTo(int32_t target) {
+static FwError moveTo(int32_t target, bool absolute) {
     if (target < 0 || target > settings.foc.maxPos) return FW_ERR_BAD_PARAM;
     if (statusAnyBusy() || axisAnyBusy()) return FW_ERR_BUSY;
     const int32_t pos = axisFoc.position();
+    const FwError g = moveGuard(MoveGuardIn{statusSafeMode(), unverified, false, absolute, target - pos,
+                                            SAFE_JOG_FOC_STEPS});
+    if (g != FW_OK) return g;
     if (target == pos) return FW_OK;
 
-    if (!tmcAnswering(AXIS_FOC) && !tmcApply(AXIS_FOC)) {
+    if ((!tmcAnswering(AXIS_FOC) && !tmcApply(AXIS_FOC)) || !hkMotorSupplyOk()) {
         statusRaise(FW_ERR_MOTOR_DRIVER);
         return FW_ERR_MOTOR_DRIVER;
     }
@@ -65,15 +79,17 @@ FwError focuserMoveTo(int32_t target) {
     const uint32_t lead = (lastDir != 0 && dir != lastDir) ? settings.foc.backlash : 0;
     nvMarkMoving(AXIS_FOC);
     if (!axisFoc.moveTo(target, lead)) return FW_ERR_BUSY;
-    lastDir = dir;
+    moveDir = dir;
     savePending = false;
     return FW_OK;
 }
 
+FwError focuserMoveTo(int32_t target) { return moveTo(target, true); }
+
 FwError focuserMoveBy(int32_t delta) {
     const int64_t t = (int64_t)axisFoc.position() + delta;
     if (t < 0 || t > (int64_t)settings.foc.maxPos) return FW_ERR_BAD_PARAM;
-    return focuserMoveTo((int32_t)t);
+    return moveTo((int32_t)t, false);
 }
 
 void focuserHalt() { axisFoc.halt(); }

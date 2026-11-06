@@ -1,7 +1,9 @@
 # Serial protocol — AstroUniBoard firmware V2
 
 Status: **2.0 (2026-11-06)**. Changes since 1.0: identify gate, `ERR,16` (#58); IMU zero calibration
-from three captures (#32). 1.0 covered framing, USB identity, common block 20–49 (#7), focuser 50–69
+from three captures (#32). Compatible additions (still protocol 2): `:22#` / `:31#` refused while busy
+(#76), driver check on rotator moves (#74), `ERR,17` with the rotator move guard `:97` / `:98` and
+status flag 9 (#75), safe-mode move rules (#77), firmware image marker [§9](#9-firmware-image-marker) (#79). 1.0 covered framing, USB identity, common block 20–49 (#7), focuser 50–69
 (#8), rotator 70–89 (#9), environment / IMU 90–99 (#10) and error codes (#11). Changes go through a PR
 and raise the protocol version when incompatible.
 
@@ -89,13 +91,13 @@ Numbers 00–19 are not used (`ERR,10`), so a host that probes the board as an O
 |---|---|---|---|---|
 | 20 | — (OpenWheel: home) | | `ERR,10` | |
 | 21 | — (OpenWheel: move by steps) | | `ERR,10` | |
-| 22 | reboot | | `OK#`, then resets | ✓ |
+| 22 | reboot | | `OK#`, then resets / `ERR,8` (busy) | ✓ |
 | 23 | write settings to EEPROM | | `OK#` / `ERR,4` | |
 | 24 | reset settings to defaults (running values; `:23#` to keep) | | `OK#` / `ERR,8` | |
 | 25 | ping | | `OK#` | ✓ |
 | 26–29 | — | | `ERR,10` | |
 | 30 | halt **both** axes (decelerate) | | `OK#` | |
-| 31 | reboot into the USB DFU bootloader | | `OK#`, then resets | ✓ |
+| 31 | reboot into the USB DFU bootloader | | `OK#`, then resets / `ERR,8` (busy) | ✓ |
 | 32 | identify | | see 3.1 | |
 | 33 | status | | see 3.2 | |
 | 34 | read / clear sticky error | none / `0` | `E,<code>#` / `OK#` | |
@@ -111,7 +113,11 @@ Numbers 00–19 are not used (`ERR,10`), so a host that probes the board as an O
 | 48 | set motor driver config | `F`/`R`,run,hold,usteps,mode,idle_off | `OK#` | |
 | 49 | reserved for the common block | | `ERR,10` | |
 
-`:22#` and `:31#` answer `OK#`, flush, wait 50 ms so the host can read the reply, then reset.
+`:22#` and `:31#` take no parameter (`ERR,7` otherwise). While any axis moves, halts, homes or
+calibrates (state 2–5) they answer **`ERR,8`** and do nothing, so a reset never cuts a move (#76).
+A host that wants to reboot or update during a move sends `:30#` (halt both), polls `:33#` until
+state is 1, then sends `:22#` / `:31#` again. When idle they answer `OK#`, flush, wait 50 ms so the
+host can read the reply, then reset.
 `:31#` stores a magic word in TAMP backup register 0 and resets; the boot code jumps to the
 STM32 system bootloader before clocks and USB start (`fw/src/bootloader.cpp`). The board comes
 back as `0483:DF11` (STM32 BOOTLOADER); after the download it starts the firmware again.
@@ -159,14 +165,15 @@ S,1,12500,-1,9000,-1,0,30#
 | Flag bit | Meaning |
 |---|---|
 | 0 | focuser position unverified (power lost while moving or never saved) |
-| 1 | rotator angle unverified (not homed since boot, Q20) |
+| 1 | rotator angle unverified (not homed or synced since boot, Q20; set at every boot) |
 | 2 | EEPROM fault (missing, bad CRC → defaults in use) |
 | 3 | housekeeping warning (see `:40#`) |
 | 4 | on-board SHT31 has a valid reading |
 | 5 | external SHT31 (J9) has a valid reading |
 | 6 | IMU answering |
 | 7 | IMU zero not calibrated |
-| 8 | safe mode: started after a watchdog reset with sensors disabled (see `:46#`) |
+| 8 | safe mode: started after a watchdog reset with sensors disabled (see `:46#`); move rules in [§4](#4-device-blocks) |
+| 9 | rotator angle **suspect** (#75): a power loss cut a move, a move ended without a halt (stall, fault), the angle was never saved, or safe mode. Kept across reboots until `:76` sync or a good `:77` home. While set and the guard `:97` is 1, rotator moves answer `ERR,17` |
 
 Only one axis moves at a time (Q12): a move command while state is 2–5 answers `ERR,8`.
 
@@ -185,7 +192,7 @@ H,312,3297,-1,-1,0,0,0,0#
 | vdda | MCU supply, mV, against the internal reference |
 | v5, v5_min | always `-1`: rev 2.0 has no voltage-sense divider (Q24) |
 | driver_temp | worst of the two TMC2209 temperature classes: `0` below 120 °C, else `120`/`143`/`150`/`157`; `-1` a driver does not answer |
-| warnings | hex bitmask: bit1 TMC2209 overtemperature prewarning, bit2 a TMC2209 was reset by a supply dip and re-initialised (cleared with `:34,0#`), bit3 crystal not running, clocks from the trimmed HSI48. bit0 (+5V low) is never set |
+| warnings | hex bitmask: bit1 TMC2209 overtemperature prewarning, bit2 a TMC2209 was reset by a supply dip and re-initialised (cleared with `:34,0#`), bit3 crystal not running, clocks from the trimmed HSI48, bit4 +12 V below 9 V (rev 2.1 builds only, #74). bit0 (+5V low) is never set |
 | foc_driver_temp, rot_driver_temp | the same class per driver |
 
 Driver temperatures are read while idle.
@@ -256,8 +263,8 @@ Get/set pairs use even/odd numbers as OpenWheel does.
 | Cmd | Name | Params | Answer |
 |---|---|---|---|
 | 50 | position | | steps |
-| 51 | move to absolute position | steps, `0..max` | `OK#` / `ERR,7` / `ERR,8` |
-| 52 | move relative | ±steps, target must be in `0..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 51 | move to absolute position | steps, `0..max` | `OK#` / `ERR,7` / `ERR,8` / `ERR,5` / `ERR,17` (safe mode) |
+| 52 | move relative | ±steps, target must be in `0..max` | `OK#` / `ERR,7` / `ERR,8` / `ERR,5` / `ERR,17` (safe mode) |
 | 53 | halt the focuser (decelerate) | | `OK#` |
 | 54 | get max position | | steps |
 | 55 | set max position | 1..10000000, ≥ current position (≥ target during a move up) | `OK#` / `ERR,7` |
@@ -280,6 +287,13 @@ Rules:
   `foc_target` until it ends. A target equal to the position answers `OK#` without motion. The
   firmware never clamps: a target outside `0..max` is `ERR,7` (ASCOM drivers clamp before sending,
   as `IFocuserV4.Move` allows). Any move while either axis is busy is `ERR,8` (Q12).
+- **Driver check.** A move that needs motion first checks the TMC2209 (one re-apply of its config
+  if it does not answer) and, in rev 2.1 builds, +12 V ≥ 9 V; on failure `ERR,5` and sticky error 5.
+- **Safe mode (#77).** After a watchdog reset the positions are not loaded (position 0, flag 0).
+  Until `:56` sync: `:51` answers `ERR,17`; `:52` is allowed only up to ±200 steps (larger →
+  `ERR,17`), still inside `0..max` — sync to a middle value first to jog both ways. After a sync,
+  moves behave normally.
+- Order of the checks: parameter / range (`ERR,7`), busy (`ERR,8`), safe mode (`ERR,17`), driver (`ERR,5`).
 - **Busy rules of the setters.** `:56` sync and `:65` reverse answer `ERR,8` only while the **focuser**
   moves or halts; they touch nothing the rotator uses, so they are accepted while the rotator moves.
   `:55` is accepted during a move as long as the new max is not below the position (or below the
@@ -290,7 +304,9 @@ Rules:
   (position unverified). Use it after a power loss or to define a new zero.
 - **Backlash** is taken up on a **direction change**: the firmware runs `backlash` extra steps first,
   which the position counter does not count. If the host compensates itself (NINA's overshoot
-  method), leave it at 0 so the two do not add up.
+  method), leave it at 0 so the two do not add up. The new direction counts only once the take-up
+  has run in full: after a halt inside the take-up, the next move in the same direction runs it again.
+  The first move after boot takes up nothing (direction unknown).
 - **Reverse** flips the motor direction only; the position and limits keep their meaning.
 - **Step size** is not used by the firmware. It is stored so that `IFocuserV4.StepSize` and the
   guide-focuser plugin read the same value on any PC; 0 makes ASCOM report StepSize as not
@@ -349,13 +365,13 @@ from +170° to 190° goes through 0° to −170°. A target with no candidate in
 | Cmd | Name | Params | Answer |
 |---|---|---|---|
 | 70 | mechanical angle, signed | | cdeg, e.g. `-9000` |
-| 71 | move to angle (cable-wrap rule) | 0..35999 | `OK#` / `ERR,7` / `ERR,8` |
-| 72 | move relative | ±cdeg, target inside `min..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 71 | move to angle (cable-wrap rule) | 0..35999 | `OK#` / `ERR,7` / `ERR,8` / `ERR,5` / `ERR,17` |
+| 72 | move relative | ±cdeg, target inside `min..max` | `OK#` / `ERR,7` / `ERR,8` / `ERR,5` / `ERR,17` |
 | 73 | halt the rotator (decelerate) | | `OK#` |
 | 74 | get cable-wrap range | | `<min>,<max>` |
 | 75 | set cable-wrap range | min −36000..0, max 0..36000, current angle inside | `OK#` / `ERR,7` / `ERR,8` |
 | 76 | set mechanical angle (sync, no motion) | signed cdeg inside `min..max` | `OK#` / `ERR,7` / `ERR,8` |
-| 77 | IMU home: rotate to the IMU zero, then set the angle to 0 | | `OK#` / `ERR,9` / `ERR,14` / `ERR,15` / `ERR,8` |
+| 77 | IMU home: rotate to the IMU zero, then set the angle to 0 | | `OK#` / `ERR,9` / `ERR,14` / `ERR,15` / `ERR,8` / `ERR,5` |
 | 78 | get speed | | cdeg/s |
 | 79 | set speed | 10..3600 cdeg/s | `OK#` / `ERR,7` |
 | 80 | get acceleration | | cdeg/s² |
@@ -372,6 +388,20 @@ from +170° to 190° goes through 0° to −170°. A target with no candidate in
 Rules:
 - **Moves** behave like focuser moves: `OK#` when started, state 3 and `rot_target_cdeg` in status
   until done, `ERR,8` while any axis is busy, no clamping.
+- **Driver check (#74)** as the focuser: every move that needs motion — also each move of IMU home
+  and IMU calibration — first checks the TMC2209 (and +12 V in rev 2.1 builds). `:71` / `:72` answer
+  `ERR,5`; `:77` / `:95` check before they start (`ERR,5`); a failure during a sequence aborts it with
+  sticky error 5. No angle changes without motion, so the cable-wrap bookkeeping stays right.
+- **Suspect angle guard (#75).** While status flag 9 is set and the guard is on (`:97` = 1, the
+  default), `:71`, `:72` and `:95` answer **`ERR,17`**. Clear it with `:76,<angle>#` (after checking
+  the camera angle) or `:77` IMU home, which stays allowed. With the guard off (`:98,0#`) moves are
+  allowed and flag 9 is only shown. A brand-new board (angle never saved) starts with flag 9: send
+  `:76,0#` with the camera upright before the first move or `:95`. Flag 1 alone (every boot) does not
+  block moves.
+- **Safe mode (#77).** Flag 9 is always set (angle not loaded). Instead of the guard: `:71` answers
+  `ERR,17`, `:72` is allowed up to ±1000 cdeg (±10°), larger → `ERR,17`; `:76` sync lifts it.
+- Order of the checks: parameter (`ERR,7`), busy (`ERR,8`), guard / safe mode (`ERR,17`), cable-wrap
+  range (`ERR,7`), driver (`ERR,5`).
 - **Set home** is `:76,0#`: the current orientation becomes 0 and status flag 1 (angle unverified) clears.
   **Go home** is `:71,0#` — with the wrap rule it always unwinds.
 - **IMU home** `:77` (state 4) needs the IMU zero calibration (`:95`, else `ERR,9`) and a usable
@@ -398,6 +428,7 @@ Defaults (V1 OnStepX config, Triton rotator: 200-step motor, 10:1 belt):
 | cable-wrap range | −18000..+18000 |
 | boot home | 0 |
 | home tolerance | 50 (0.5°) |
+| move guard (`:97`) | 1 (on) |
 
 Example:
 
@@ -418,9 +449,14 @@ Example:
 | 92 | get sensor selection | | `0` auto, `1` on-board, `2` external |
 | 93 | set sensor selection | `0` / `1` / `2` | `OK#` / `ERR,7` |
 | 94 | IMU reading | | `I,<roll>,<tilt>,<ax>,<ay>,<az>#` / `ERR,14` |
-| 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,7` / `ERR,8` / `ERR,14` / `ERR,15` |
+| 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,7` / `ERR,8` / `ERR,14` / `ERR,15` / `ERR,17` / `ERR,5` |
 | 96 | IMU calibration data | | `C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>,<cx>,<cy>,<cz>#` |
-| 97–99 | — reserved | | `ERR,10` |
+| 97 | get rotator move guard (#75) | | `0` / `1` |
+| 98 | set rotator move guard: 1 = refuse rotator moves while flag 9 is set | `0` / `1` | `OK#` / `ERR,7` |
+| 99 | — reserved | | `ERR,10` |
+
+`:97` / `:98` live here because the rotator block is full; the value is a running setting like the
+others (`:23#` saves it, settings record version 2; a version 1 record loads with the default 1).
 
 **Environment.** `t` and `dew` in 0.1 °C, `rh` in 0.1 %RH. `:90` returns the reading the drivers
 use (ASCOM ObservingConditions, INDI WEATHER, host temperature compensation): `src` 1 on-board, 2
@@ -496,6 +532,7 @@ different meaning; codes OpenWheel uses for wheel-only faults are left unused he
 | 14 | sensor missing or no valid reading | rejection | SHT31 / IMU query without a valid value |
 | 15 | IMU: optical axis too close to vertical | rejection | `:77` / `:95` near the zenith (roll undefined) |
 | 16 | not identified | rejection | any command but `:25` / `:32` before `:32#` since the last reset or port open |
+| 17 | position unverified | rejection | AstroUniBoard only (keep reserved in OpenWheel). A move refused because the position can't be trusted: rotator flag 9 with the guard on (#75), or safe mode (#77). Sync (`:56` / `:76`) or `:77` home first |
 
 A sticky fault stops the moving axis, returns state to idle and keeps the code in `:33#` / `:34#`
 until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in the reply.
@@ -505,6 +542,7 @@ until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in
 | Topic | OpenWheel (protocol 2) | AstroUniBoard (protocol 2) |
 |---|---|---|
 | identify | `OPENWHEEL,<model>,<fw>,<proto>,<serial>#` | prefix `ASTROUNIBOARD`, extra `caps` field |
+| error 17 | — | position unverified (reserve 17 in OpenWheel) |
 | status | wheel fields | own fields (3.2); same `S,` tag and `<error>,<flags>` meaning in spirit |
 | housekeeping | 6 fields | same 6 + two per-driver fields; `v5` always `-1` |
 | StallGuard | one motor, `:41#` / `:42,<thr>#` | axis selector: `:41,F#` / `:42,F,<thr>#` |
@@ -519,3 +557,15 @@ until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in
 - Identify `model` is the **board revision** (`REV2`), not the MCU.
 - `:24#` reset to defaults **stays**.
 - Status state 5 **halting** stays: a halted axis reports 5 while it decelerates, then 1.
+
+## 9. Firmware image marker
+
+Every firmware image contains the ASCII bytes **`ASTROUNIBOARD-IMG:<model>;`** — for the current
+builds `ASTROUNIBOARD-IMG:REV2;` (`<model>` = identify `model`, `BOARD_MODEL` in `fw/src/config.h`).
+It is the constant `kAubImageMarker` in `fw/src/main.cpp`, referenced from `setup()` so the linker
+keeps it. An updater (#79) searches the `.bin` for `ASTROUNIBOARD-IMG:` before sending `:31#`:
+missing → not an AstroUniBoard image; a model that differs from the identify reply → warn. The
+marker sits somewhere in flash (not at a fixed offset); search the whole image.
+
+The rev 2.0 (`env:rev2`) and rev 2.1 (`env:rev21`) builds both report `REV2`. A rev 2.1 image on a
+rev 2.0 board reads the unconnected PB10 as low +12 V and refuses moves with `ERR,5`.

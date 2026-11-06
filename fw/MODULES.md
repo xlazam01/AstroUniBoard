@@ -20,11 +20,12 @@ The headers are the contracts between modules. Code that needs another module us
 | Axis | `axis.*` | #23 | position, target, trapezoid ramp, halt |
 | TMC2209 + StallGuard | `tmc2209.*` | #24 #27 | USART2 460800, focuser addr 0, rotator addr 1 |
 | Focuser | `focuser.*` | #25 #26 | soft limits, backlash, position persistence |
-| Rotator | `rotator.*`, `rotator_wrap.*` | #29 #30 #32 | angle, cable wrap, IMU home / calibration sequence |
+| Rotator | `rotator.*`, `rotator_wrap.*` | #29 #30 #32 #74 #75 | angle, cable wrap, IMU home / calibration sequence, suspect angle |
+| Move guard | `move_guard.*` | #75 #77 | pure: suspect angle / safe-mode move rules (native test) |
 | IMU | `imu_mpu6000.*` | #31 #32 | MPU-6000 on I2C 0x68, roll / tilt, calibration math |
 | SHT31 | `env_sht31.*` | #34 | on-board 0x45, J9 0x44, selection |
 | NV store | `nv_store.*` | #17 | 24AA64: settings, position, IMU calibration records |
-| Housekeeping | `housekeeping.*` | #18 | die temp, VDDA, driver temp classes |
+| Housekeeping | `housekeeping.*` | #18 #74 | die temp, VDDA, driver temp classes, +12 V sense (rev 2.1 build) |
 | LEDs | `leds.*` | #20 | TIM16 soft PWM |
 | Diagnostics | `diag.*`, `bootloader.*`, `clock_config.*` | #19 | IWDG, safe mode, DFU |
 
@@ -33,3 +34,7 @@ Timers: TIM3 step generator, TIM16 LED PWM. ISRs touch only the step timer and t
 Start-up order (`setup()`): diag → status → settings defaults → axis pins → USB → (not in safe mode:
 Wire → nvBegin → imuBegin → envBegin) → step timer → tmcBegin → focuserBegin → rotatorBegin → hkBegin.
 Safe mode (after a watchdog reset) skips every I2C device: defaults in use, EEPROM fault flag set.
+Moves in safe mode: absolute refused, small relative jogs only, until a sync (PROTOCOL.md §4, #77).
+
+Builds: `env:rev2` (rev 2.0, `HW_REV` 20) and `env:rev21` (rev 2.1, `-D HW_REV=21`: +12 V sense on PB10).
+Image marker `ASTROUNIBOARD-IMG:REV2;` in `main.cpp` (PROTOCOL.md §9, #79).

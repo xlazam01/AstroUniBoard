@@ -56,6 +56,7 @@
 #define SLOT_FOC_SAVED     0x04   // a focuser position was saved at least once
 #define SLOT_ROT_SAVED     0x08
 #define SLOT_FOC_UNVERIFIED 0x10  // saved as a best estimate (stall, never synced): unverified at boot
+#define SLOT_ROT_UNVERIFIED 0x20  // rotator angle saved as a best estimate (stall, fault stop): suspect at boot (#75)
 // PosSlot.reserved holds log2(focuser microsteps) + 1 at the time of the write (0 = unknown, older
 // slots), so a microstep change that was not saved with :23# can be undone at boot.
 
@@ -239,7 +240,7 @@ static bool settingsSane(const Settings& s) {
         if (d.microsteps == 0 || d.microsteps > 256 || (d.microsteps & (d.microsteps - 1))) return false;
         if (d.mode > DRV_SPREADCYCLE) return false;
     }
-    return s.envSelect <= ENV_SEL_EXTERNAL && s.ledBrightness <= 100;
+    return s.envSelect <= ENV_SEL_EXTERNAL && s.ledBrightness <= 100 && s.rotGuard <= 1;
 }
 
 // --- position ring ----------------------------------------------------------------------------------
@@ -255,7 +256,7 @@ static void scanRing() {
         }
         for (uint8_t k = 0; k < NV_READ_CHUNK / NV_SLOT_SIZE; k++) {
             const PosSlot& s = page[k];
-            if ((s.flags & 0xE0) || s.reserved > 9 || s.crc != slotCrc(s)) continue;   // blank = 0xFF
+            if ((s.flags & 0xC0) || s.reserved > 9 || s.crc != slotCrc(s)) continue;   // blank = 0xFF
             if (!found || (int32_t)(s.seq - best.seq) > 0) { best = s; newest = i + k; found = true; }
         }
     }
@@ -318,7 +319,7 @@ void nvLoadPositions(SavedPositions& out) {
     out.focValid = (pos.flags & SLOT_FOC_SAVED) && !(pos.flags & (SLOT_FOC_MOVING | SLOT_FOC_UNVERIFIED));
     out.focPos   = pos.focPos;
     out.focUsteps = pos.reserved ? (uint16_t)(1u << (pos.reserved - 1)) : 0;
-    out.rotValid = (pos.flags & SLOT_ROT_SAVED) && !(pos.flags & SLOT_ROT_MOVING);
+    out.rotValid = (pos.flags & SLOT_ROT_SAVED) && !(pos.flags & (SLOT_ROT_MOVING | SLOT_ROT_UNVERIFIED));
     out.rotCdeg  = pos.rotCdeg;
 }
 
@@ -338,7 +339,8 @@ void nvSavePosition(AxisId axis, int32_t value, bool verified) {
         pos.flags = f;
         pos.focPos = value;
     } else {
-        const uint8_t f = (uint8_t)((pos.flags & ~SLOT_ROT_MOVING) | SLOT_ROT_SAVED);
+        uint8_t f = (uint8_t)((pos.flags & ~(SLOT_ROT_MOVING | SLOT_ROT_UNVERIFIED)) | SLOT_ROT_SAVED);
+        if (!verified) f |= SLOT_ROT_UNVERIFIED;
         if (f == pos.flags && value == pos.rotCdeg) return;
         pos.flags = f;
         pos.rotCdeg = value;

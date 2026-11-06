@@ -21,6 +21,10 @@
 #include "step_timer.h"
 #include "tmc2209.h"
 
+// Image marker (#79): lets the updater recognise an AstroUniBoard image before flashing it.
+// The .bin contains the bytes "ASTROUNIBOARD-IMG:REV2;" (PROTOCOL.md §9).
+extern "C" __attribute__((used)) const char kAubImageMarker[] = "ASTROUNIBOARD-IMG:" BOARD_MODEL ";";
+
 // Answer even when the host opens the port with DTR = false (same as OpenWheel).
 extern "C" void CDC_enableDTR(bool enable);
 
@@ -28,6 +32,8 @@ static Protocol protocol;
 static bool safeMode;   // last reset came from the watchdog: run without the I2C devices
 
 void setup() {
+    // keeps the image marker through --gc-sections (`used` alone does not stop the linker)
+    __asm__ volatile("" : : "r"(kAubImageMarker));
     diagBoot();         // reset cause + last progress marker, starts the watchdog
     safeMode = diagWatchdogReset();
     statusBegin(safeMode);
