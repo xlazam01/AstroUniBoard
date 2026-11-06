@@ -146,6 +146,13 @@ class TcpTransport:
     def unplug(self):
         self._drop_client()
         if self.listener is not None:
+            if os.name != "nt":
+                # close() alone leaves the listener accepting while the serving thread is still in select()
+                # on it (Linux): a host that reconnects at once is accepted and then reset
+                try:
+                    self.listener.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
             self.listener.close()
             self.listener = None
 
