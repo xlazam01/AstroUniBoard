@@ -13,6 +13,27 @@ void protoReply(const char* s, int n) {
     PROTOCOL_SERIAL.write((const uint8_t*)s, (size_t)n);
 }
 
+static bool identified = false;   // cleared at reset and when a host opens the port (#58)
+
+void protoSetIdentified() { identified = true; }
+
+// ---- port-open detection (identify gate, #58; same code as OpenWheel#16) ----
+// A host's CDC driver sends SET_LINE_CODING / SET_CONTROL_LINE_STATE when a program opens the port
+// (Windows usbser also with DTR = false) and when it changes the port settings. The stm32duino CDC
+// code has no hook for them, so the USB core's setup-stage entry is wrapped at link time
+// (-Wl,--wrap=USBD_LL_SetupStage in platformio.ini). Runs in the USB interrupt: only sets a flag;
+// Protocol::process() locks again before it reads the next bytes.
+#include "usbd_def.h"
+static volatile bool usbPortOpened = false;
+
+extern "C" USBD_StatusTypeDef __real_USBD_LL_SetupStage(USBD_HandleTypeDef* pdev, uint8_t* psetup);
+extern "C" USBD_StatusTypeDef __wrap_USBD_LL_SetupStage(USBD_HandleTypeDef* pdev, uint8_t* psetup) {
+    // bmRequestType 0x21 = host-to-device, class, interface
+    // bRequest 0x20 = SET_LINE_CODING, 0x22 = SET_CONTROL_LINE_STATE
+    if (psetup[0] == 0x21 && (psetup[1] == 0x20 || psetup[1] == 0x22)) usbPortOpened = true;
+    return __real_USBD_LL_SetupStage(pdev, psetup);
+}
+
 void protoOk() { protoReply("OK#", 3); }
 
 void protoError(FwError code) {
@@ -77,6 +98,12 @@ int protoAxis(const char* s) {
 }
 
 void Protocol::process() {
+    // A host (re)opened or reconfigured the port: lock until it identifies again. Checked before
+    // reading the bytes, because the host sends the class requests before its first command.
+    if (usbPortOpened) {
+        usbPortOpened = false;
+        identified = false;
+    }
     while (PROTOCOL_SERIAL.available() > 0) {
         const char c = (char)PROTOCOL_SERIAL.read();
         if (c == ':') {
@@ -101,6 +128,9 @@ void Protocol::handleCommand() {
     if (len < 2 || !isDigit(buf[0]) || !isDigit(buf[1])) { protoError(FW_ERR_BAD_FORMAT); return; }
     const uint8_t cmd = (uint8_t)((buf[0] - '0') * 10 + (buf[1] - '0'));
     char* params = &buf[2];
+
+    // A device on the shared test PID 1209:0001 must be identified before it acts on anything.
+    if (!identified && cmd != 25 && cmd != 32) { protoError(FW_ERR_NOT_IDENTIFIED); return; }
 
     if (cmd >= 90)      protocolEnv(cmd, params);
     else if (cmd >= 70) protocolRotator(cmd, params);

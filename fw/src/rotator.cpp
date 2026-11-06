@@ -28,8 +28,8 @@
 #define IMU_SETTLE_TIMEOUT_MS    5000
 // Boot home (Q20) starts this long after rotatorBegin(), so the IMU filter has samples
 #define BOOT_HOME_DELAY_MS       3000
-// :95 rotates by this much (the calibration math expects +90 deg)
-#define CAL_MOVE_CDEG            9000
+// :95 captures gravity at the start angle, +90 deg and +180 deg (imu_math.h), then returns
+#define CAL_STEP_CDEG            9000
 
 enum Seq : uint8_t {
     SEQ_NONE = 0,
@@ -37,7 +37,9 @@ enum Seq : uint8_t {
     SEQ_HOME_MOVE,       // waiting for the homing move to end
     SEQ_CAL_SETTLE0,     // settle at the start orientation, capture g0, move +90 deg
     SEQ_CAL_MOVE90,
-    SEQ_CAL_SETTLE90,    // settle at +90 deg, capture g90, move back
+    SEQ_CAL_SETTLE90,    // settle at +90 deg, capture g90, move to +180 deg
+    SEQ_CAL_MOVE180,
+    SEQ_CAL_SETTLE180,   // settle at +180 deg, capture g180, move back
     SEQ_CAL_MOVEBACK     // back at the start: imuCalFinish()
 };
 
@@ -172,23 +174,31 @@ static void seqUpdate() {
 
         case SEQ_CAL_SETTLE0:
             if (!settled()) break;
-            if (!imuCalCaptureG0() || !startMove(calStart + CAL_MOVE_CDEG)) { abortSeq(FW_ERR_CALIB_FAILED); break; }
+            if (!imuCalCaptureG0() || !startMove(calStart + CAL_STEP_CDEG)) { abortSeq(FW_ERR_CALIB_FAILED); break; }
             seq = SEQ_CAL_MOVE90;
             break;
 
         case SEQ_CAL_SETTLE90:
             if (!settled()) break;
-            if (!imuCalCaptureG90() || !startMove(calStart)) { abortSeq(FW_ERR_CALIB_FAILED); break; }
+            if (!imuCalCaptureG90() || !startMove(calStart + 2 * CAL_STEP_CDEG)) { abortSeq(FW_ERR_CALIB_FAILED); break; }
+            seq = SEQ_CAL_MOVE180;
+            break;
+
+        case SEQ_CAL_SETTLE180:
+            if (!settled()) break;
+            if (!imuCalCaptureG180() || !startMove(calStart)) { abortSeq(FW_ERR_CALIB_FAILED); break; }
             seq = SEQ_CAL_MOVEBACK;
             break;
 
         case SEQ_HOME_MOVE:
         case SEQ_CAL_MOVE90:
+        case SEQ_CAL_MOVE180:
         case SEQ_CAL_MOVEBACK: {
             if (moving) break;
             if (!lastMoveComplete) { abortSeq(seqError()); break; }   // stalled / stopped by a fault
             if (seq == SEQ_HOME_MOVE) { beginSettle(SEQ_HOME_SETTLE); break; }
             if (seq == SEQ_CAL_MOVE90) { beginSettle(SEQ_CAL_SETTLE90); break; }
+            if (seq == SEQ_CAL_MOVE180) { beginSettle(SEQ_CAL_SETTLE180); break; }
             seq = SEQ_NONE;
             const FwError err = imuCalFinish();
             // FW_ERR_EEPROM: the new calibration is in use (only not saved), so zero the angle too,
@@ -280,9 +290,9 @@ FwError rotatorImuCalibrate() {
     // ERR,15 up front is possible only with an existing calibration (imuNearVertical() uses it);
     // without one, a vertical optical axis is found by imuCalFinish() (sticky FW_ERR_CALIB_FAILED).
     if (imuNearVertical()) return FW_ERR_IMU_VERTICAL;
-    // The +90 deg move must stay inside the cable wrap (sync with :76,0# first when the saved
-    // angle is wrong): rejected like any move outside the range.
-    if ((int64_t)angleIdle + CAL_MOVE_CDEG > settings.rot.wrapMax) return FW_ERR_BAD_PARAM;
+    // The moves up to +180 deg must stay inside the cable wrap (sync with :76,0# first when the
+    // saved angle is wrong): rejected like any move outside the range.
+    if ((int64_t)angleIdle + 2 * CAL_STEP_CDEG > settings.rot.wrapMax) return FW_ERR_BAD_PARAM;
     calStart = angleIdle;
     beginSettle(SEQ_CAL_SETTLE0);
     return FW_OK;

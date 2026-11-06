@@ -48,7 +48,7 @@
 
 #define NV_MAGIC_SETTINGS  0x5355   // "US"
 #define NV_MAGIC_IMU       0x4955   // "UI"
-#define NV_IMU_VERSION     1
+#define NV_IMU_VERSION     2   // 2: + circle centre c (version 1 loads with c = 0)
 
 // Slot flags
 #define SLOT_FOC_MOVING    0x01

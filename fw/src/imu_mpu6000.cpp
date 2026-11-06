@@ -51,8 +51,8 @@ static bool     haveSample;       // filt holds a value since the chip (re)start
 static ImuV3    filt;             // low-pass filtered acceleration, mg
 static uint16_t freshSamples;     // samples since imuRestartFilter()
 static uint32_t lastSample, lastGood, lastProbe, lastCheck;
-static bool     cap0Ok, cap90Ok;
-static ImuV3    cap0, cap90;
+static bool     cap0Ok, cap90Ok, cap180Ok;
+static ImuV3    cap0, cap90, cap180;
 
 // STM32duino Wire (G0): after a failed transfer the next one can hang; restart the peripheral
 // (found on the board 2026-11-06, see i2c_bus.h).
@@ -100,7 +100,7 @@ static void lose(uint32_t now) {
     answering  = false;
     haveSample = false;
     freshSamples = 0;
-    cap0Ok = cap90Ok = false;
+    cap0Ok = cap90Ok = cap180Ok = false;
     lastProbe = now;
 }
 
@@ -196,7 +196,7 @@ void imuRestartFilter() { freshSamples = 0; }
 bool imuSettled() { return live() && freshSamples >= SETTLE_SAMPLES; }
 
 bool imuCalCaptureG0() {
-    cap0Ok = cap90Ok = false;                   // a new sequence: drop an old g90
+    cap0Ok = cap90Ok = cap180Ok = false;        // a new sequence: drop old captures
     if (!imuSettled()) return false;
     cap0 = filt;
     cap0Ok = true;
@@ -211,13 +211,21 @@ bool imuCalCaptureG90() {
     return true;
 }
 
+bool imuCalCaptureG180() {
+    cap180Ok = false;
+    if (!cap0Ok || !cap90Ok || !imuSettled()) return false;
+    cap180 = filt;
+    cap180Ok = true;
+    return true;
+}
+
 // On success the new calibration is used at once, also when the EEPROM write fails (the error is
 // still returned, so the rotator can report it; the calibration is then lost at the next reset).
 FwError imuCalFinish() {
-    if (!cap0Ok || !cap90Ok) return FW_ERR_CALIB_FAILED;
-    cap0Ok = cap90Ok = false;
+    if (!cap0Ok || !cap90Ok || !cap180Ok) return FW_ERR_CALIB_FAILED;
+    cap0Ok = cap90Ok = cap180Ok = false;
     ImuCalibration c;
-    const FwError e = imuMathCalibrate(cap0, cap90, c);
+    const FwError e = imuMathCalibrate(cap0, cap90, cap180, c);
     if (e != FW_OK) return e;
     cal = c;
     return nvSaveImuCal(cal);

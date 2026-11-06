@@ -14,6 +14,8 @@ struct ImuCalibration {
     uint8_t valid;          // 0 / 1
     int16_t g0[3];          // gravity at the zero orientation, mg (chip axes)
     int16_t n[3];           // rotation axis, unit vector * 10000
+    int16_t c[3];           // centre of the gravity circle, in the plane normal to n, mg: the in-plane
+                            // accelerometer offset. Record version 2; 0 when loaded from version 1.
 };
 
 // Position record as loaded at boot

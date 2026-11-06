@@ -31,10 +31,12 @@ void imuRestartFilter();
 bool imuSettled();
 
 // Calibration (:95), sequenced by the rotator: capture g0 (landscape), move +90 deg, capture g90,
-// move back, finish. imuCalFinish() checks that the vectors are about 90 deg apart, computes
-// n = g0 x g90 (normalised) and stores g0 + n with nvSaveImuCal():
+// move +180 deg, capture g180, move back, finish. imuCalFinish() computes the rotation axis
+// n = (g90 - g0) x (g180 - g90) (exact at any elevation, imu_math.h), checks the steps are about
+// 90 deg and stores g0 + n with nvSaveImuCal():
 // FW_OK, FW_ERR_IMU_VERTICAL (gravity nearly parallel to n), FW_ERR_CALIB_FAILED or FW_ERR_EEPROM.
 bool    imuCalCaptureG0();                // false when not answering or not settled
 bool    imuCalCaptureG90();
+bool    imuCalCaptureG180();
 FwError imuCalFinish();
 const ImuCalibration& imuCalData();       // :96

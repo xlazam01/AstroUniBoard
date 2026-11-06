@@ -214,15 +214,18 @@ static void watchMove(Axis& ax, uint32_t now) {
         s.failCount = 0;
         if (!ax.busy()) return;                 // ended while we were reading
         const int16_t sg = (int16_t)(sgr & 0x3FF);
+        // Only samples the stall check uses count in :41 (after the blank time, above the minimum
+        // speed): at start-up and slow-down SG_RESULT reads near 0, which made "a third of the
+        // lowest min" useless as a threshold (measured with motors on the rev 1 board).
+        const uint32_t usteps = c.microsteps ? c.microsteps : 1;
+        const bool active = now - ax.moveStartMs() >= STALL_BLANK_MS &&
+                            ax.speedNow() >= STALL_MIN_FULLSTEPS * usteps;
+        if (!active) return;
         s.sgLast = sg;
         if (s.sgMin < 0 || sg < s.sgMin) s.sgMin = sg;
         if (sg > s.sgMax) s.sgMax = sg;
 
-        const uint32_t usteps = c.microsteps ? c.microsteps : 1;
-        if (c.stallThreshold && c.mode == DRV_STEALTHCHOP &&
-            now - ax.moveStartMs() >= STALL_BLANK_MS &&
-            ax.speedNow() >= STALL_MIN_FULLSTEPS * usteps &&
-            sg <= 2 * (int16_t)c.stallThreshold) {
+        if (c.stallThreshold && c.mode == DRV_STEALTHCHOP && sg <= 2 * (int16_t)c.stallThreshold) {
             faultStop(ax, FW_ERR_MOTOR_STALL);
         }
     }
