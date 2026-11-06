@@ -50,6 +50,9 @@ This file is only an index; edit issues on GitHub. Plan: [V2_PLAN.md](V2_PLAN.md
 ## M5 Environment
 - [#34](https://github.com/xlazam01/AstroUniBoard/issues/34) SHT31 temperature / humidity / dew point
 
+## Follow-ups
+- [#58](https://github.com/xlazam01/AstroUniBoard/issues/58) Identify first: firmware rejects commands until :32#, drivers and tools identify first
+
 ## G1 pid.codes
 - [#35](https://github.com/xlazam01/AstroUniBoard/issues/35) Public README: photos, schematic PDF, BOM, build status
 - [#36](https://github.com/xlazam01/AstroUniBoard/issues/36) Open pid.codes PR for AstroUniBoard PID
