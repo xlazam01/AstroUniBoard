@@ -9,7 +9,7 @@
 
 void protocolEnv(uint8_t cmd, char* params) {
     ProtoArgs a;
-    if (!protoSplit(params, a)) { protoError(FW_ERR_BAD_FORMAT); return; }
+    if (!protoSplit(params, a)) { protoError(FW_ERR_BAD_PARAM); return; }
 
     // Every command here except :93 takes no parameter.
     if (cmd >= 90 && cmd <= 96 && cmd != 93 && a.n != 0) { protoError(FW_ERR_BAD_PARAM); return; }

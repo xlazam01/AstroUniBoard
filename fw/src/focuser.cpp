@@ -7,7 +7,9 @@
 //    still does not answer, the move is refused with FW_ERR_MOTOR_DRIVER (also raised sticky),
 //    so the position never counts steps that a dead driver did not make.
 //  - The position is saved POSITION_SAVE_DELAY_MS after every stop, also after a stall (best
-//    estimate); "unverified" itself is RAM only, so after a stall it is lost at the next reboot.
+//    estimate); "unverified" is saved with it, so it survives a reboot until :56 sync.
+//  - The saved position carries the microstep setting it is counted in. A :48 microstep change
+//    that was not saved with :23# is undone at boot: the position is scaled back to the loaded setting.
 #include <Arduino.h>
 #include "focuser.h"
 #include "axis.h"
@@ -25,7 +27,11 @@ static uint32_t idleSince = 0;
 void focuserBegin() {
     SavedPositions sp;
     nvLoadPositions(sp);
-    axisFoc.setPosition(sp.focPos);
+    const uint16_t now = settings.drv[AXIS_FOC].microsteps;
+    int32_t p = sp.focPos;
+    if (sp.focUsteps && now && sp.focUsteps != now)
+        p = (int32_t)((int64_t)p * now / sp.focUsteps);
+    axisFoc.setPosition(p);
     unverified = !sp.focValid;
     lastDir = 0;
     savePending = false;
@@ -40,7 +46,7 @@ void focuserUpdate() {
     }
     if (savePending && !axisFoc.busy() && now - idleSince >= POSITION_SAVE_DELAY_MS) {
         savePending = false;
-        nvSavePosition(AXIS_FOC, axisFoc.position());
+        nvSavePosition(AXIS_FOC, axisFoc.position(), !unverified);
     }
 }
 
@@ -110,6 +116,8 @@ void focuserRescale(uint16_t oldUsteps, uint16_t newUsteps) {
     const int32_t p = (int32_t)clamp64(scale(axisFoc.position(), oldUsteps, newUsteps), 0, f.maxPos);
     axisFoc.setPosition(p);
     focuserApplySettings();
-    savePending = true;               // the saved position is in the old unit
-    idleSince = millis();
+    // Save on the next loop pass, after the caller (:48 / :24) has stored the new microstep value:
+    // the record carries it, so a reboot without :23# scales the position back (focuserBegin).
+    savePending = true;
+    idleSince = millis() - POSITION_SAVE_DELAY_MS;
 }

@@ -191,8 +191,10 @@ static void seqUpdate() {
             if (seq == SEQ_CAL_MOVE90) { beginSettle(SEQ_CAL_SETTLE90); break; }
             seq = SEQ_NONE;
             const FwError err = imuCalFinish();
-            if (err == FW_OK) setZeroHere();
-            else statusRaise(err == FW_ERR_IMU_VERTICAL ? FW_ERR_CALIB_FAILED : err);
+            // FW_ERR_EEPROM: the new calibration is in use (only not saved), so zero the angle too,
+            // or :70 and the IMU roll would refer to different zeros until the next reset.
+            if (err == FW_OK || err == FW_ERR_EEPROM) setZeroHere();
+            if (err != FW_OK) statusRaise(err == FW_ERR_IMU_VERTICAL ? FW_ERR_CALIB_FAILED : err);
             break;
         }
     }

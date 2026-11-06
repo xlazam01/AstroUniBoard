@@ -34,7 +34,8 @@ void protoPrintf(const char* fmt, ...) __attribute__((format(printf, 1, 2)));   
 
 // --- parameters ---
 // Splits the text after "NN" into comma separated values; one leading ' ' or ',' is skipped.
-// Returns false for more than PROTO_MAX_ARGS values or an empty value ("1,,2").
+// Returns false for more than PROTO_MAX_ARGS values or an empty value ("1,,2"); handlers answer
+// that with ERR,7 (bad parameter). ERR,11 is only for framing: line too long, no command number.
 struct ProtoArgs {
     uint8_t n;                     // 0 when there are no parameters
     char*   v[PROTO_MAX_ARGS];
