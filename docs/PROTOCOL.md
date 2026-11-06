@@ -122,7 +122,7 @@ back as `0483:DF11` (STM32 BOOTLOADER); after the download it starts the firmwar
 
 ```
 ASTROUNIBOARD,<model>,<firmware>,<protocol>,<serial>,<caps>#
-ASTROUNIBOARD,REV2,FW2.0.0,1,3A00FF12ABCD,F#
+ASTROUNIBOARD,REV2,FW2.0.0,2,3A00FF12ABCD,F#
 ```
 
 | Field | Values |
@@ -148,7 +148,7 @@ S,1,12500,-1,9000,-1,0,30#
 
 | Field | Values |
 |---|---|
-| state | 0 init, 1 idle, 2 focuser moving, 3 rotator moving, 4 rotator IMU homing or IMU calibration, 5 halting |
+| state | 0 init (only during start-up, before USB is up: hosts never see it), 1 idle, 2 focuser moving, 3 rotator moving, 4 rotator IMU homing or IMU calibration, 5 halting |
 | foc_pos | focuser position in steps |
 | foc_target | target of the running focuser move, else `-1` |
 | rot_cdeg | rotator mechanical angle 0..35999 |
@@ -260,8 +260,8 @@ Get/set pairs use even/odd numbers as OpenWheel does.
 | 52 | move relative | ±steps, target must be in `0..max` | `OK#` / `ERR,7` / `ERR,8` |
 | 53 | halt the focuser (decelerate) | | `OK#` |
 | 54 | get max position | | steps |
-| 55 | set max position | 1..10000000, ≥ current position | `OK#` / `ERR,7` |
-| 56 | set current position (sync, no motion) | `0..max` | `OK#` / `ERR,7` / `ERR,8` |
+| 55 | set max position | 1..10000000, ≥ current position (≥ target during a move up) | `OK#` / `ERR,7` |
+| 56 | set current position (sync, no motion) | `0..max` | `OK#` / `ERR,7` / `ERR,8` (focuser moving) |
 | 57 | — reserved | | `ERR,10` |
 | 58 | get speed | | steps/s |
 | 59 | set speed | 1..20000 steps/s | `OK#` / `ERR,7` |
@@ -270,7 +270,7 @@ Get/set pairs use even/odd numbers as OpenWheel does.
 | 62 | get backlash | | steps |
 | 63 | set backlash | 0..10000, 0 = off | `OK#` / `ERR,7` |
 | 64 | get reverse | | `0` / `1` |
-| 65 | set reverse | `0` / `1` | `OK#` / `ERR,8` |
+| 65 | set reverse | `0` / `1` | `OK#` / `ERR,7` / `ERR,8` (focuser moving) |
 | 66 | get step size | | 0.01 µm per step, `0` = unknown |
 | 67 | set step size | 0..100000 | `OK#` / `ERR,7` |
 | 68–69 | — reserved | | `ERR,10` |
@@ -280,6 +280,11 @@ Rules:
   `foc_target` until it ends. A target equal to the position answers `OK#` without motion. The
   firmware never clamps: a target outside `0..max` is `ERR,7` (ASCOM drivers clamp before sending,
   as `IFocuserV4.Move` allows). Any move while either axis is busy is `ERR,8` (Q12).
+- **Busy rules of the setters.** `:56` sync and `:65` reverse answer `ERR,8` only while the **focuser**
+  moves or halts; they touch nothing the rotator uses, so they are accepted while the rotator moves.
+  `:55` is accepted during a move as long as the new max is not below the position (or below the
+  target of a move up). Speed, acceleration, backlash and step size can be set any time and apply
+  from the next move.
 - **Halt.** `:53` (and `:30`) decelerate; state 5 until stopped. The position is exact afterwards.
 - **Sync** `:56` sets the position counter without motion and clears status flag 0
   (position unverified). Use it after a power loss or to define a new zero.
@@ -413,7 +418,7 @@ Example:
 | 92 | get sensor selection | | `0` auto, `1` on-board, `2` external |
 | 93 | set sensor selection | `0` / `1` / `2` | `OK#` / `ERR,7` |
 | 94 | IMU reading | | `I,<roll>,<tilt>,<ax>,<ay>,<az>#` / `ERR,14` |
-| 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,8` / `ERR,14` / `ERR,15` |
+| 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,7` / `ERR,8` / `ERR,14` / `ERR,15` |
 | 96 | IMU calibration data | | `C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>,<cx>,<cy>,<cz>#` |
 | 97–99 | — reserved | | `ERR,10` |
 
@@ -497,7 +502,7 @@ until `:34,0#`. Moves stay allowed (the host decides). Rejections appear only in
 
 ## 7. Differences from OpenWheel
 
-| Topic | OpenWheel (protocol 2) | AstroUniBoard (protocol 1) |
+| Topic | OpenWheel (protocol 2) | AstroUniBoard (protocol 2) |
 |---|---|---|
 | identify | `OPENWHEEL,<model>,<fw>,<proto>,<serial>#` | prefix `ASTROUNIBOARD`, extra `caps` field |
 | status | wheel fields | own fields (3.2); same `S,` tag and `<error>,<flags>` meaning in spirit |
