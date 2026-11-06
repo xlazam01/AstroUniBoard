@@ -19,6 +19,9 @@ namespace AstroUniBoard.Ascom
         public const string SnapshotAction = Prefix + "Snapshot";
         public const string LogAction = Prefix + "Log";
 
+        // #78: Raw, SaveSettings, ImuCalibrate, Reboot and EnterDfu are maintenance actions. They stay
+        // available over local COM; an Alpaca device must NOT list or run them (SPEC.md §5, "Maintenance
+        // actions and Alpaca"). Reboot / EnterDfu are refused while an axis moves (#76, BoardController).
         public static readonly string[] Names =
         {
             RawAction, SnapshotAction, LogAction,

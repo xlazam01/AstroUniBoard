@@ -307,7 +307,31 @@ namespace AstroUniBoard.DebugApp
             stripText.Text = text;
             stripText.ForeColor = Replies.IsFailure(reply) ? Color.Firebrick : SystemColors.ControlText;
             ConsoleEcho(command, reply);
+            string hint = Replies.RotatorRefusalHint(command, reply, view != null ? view.Status : null);
+            if (hint != null)
+            {
+                AppLog("rotator move refused: " + hint);
+                MessageBox.Show(this, "The board refused the rotator move: " + hint + ".", "AstroUniBoard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
             return reply;
+        }
+
+        /// <summary>
+        /// Before :22# / :31# (#76): true when the board is idle, or the user agreed to halt both axes
+        /// and the board became idle; else false (with a message).
+        /// </summary>
+        private async Task<bool> EnsureIdle(string what)
+        {
+            IBoardSession s = session;
+            if (s == null) return false;
+            if (view == null || view.Status == null || !view.Status.Busy) return true;
+            if (!Confirm("An axis is moving. Halt both axes, wait until the board is idle, and then " + what + "?")) return false;
+            string problem = await Task.Run(() => { try { return s.HaltAndWaitIdle(); } catch (Exception ex) { return ex.Message; } });
+            AppLog("halt before " + what + ": " + (problem ?? "idle"));
+            await PollAsync();
+            if (problem == null) return true;
+            MessageBox.Show(this, "Not done: " + problem + ".", "AstroUniBoard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
         }
 
         private async Task<string> DoAction(BoardAction a)

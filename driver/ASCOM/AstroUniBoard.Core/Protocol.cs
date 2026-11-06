@@ -45,6 +45,28 @@ namespace AstroUniBoard.Core
         /// <summary>True for sticky device faults (codes 1..5 and 13), false for command rejections.</summary>
         public static bool IsFault(int code) { return (code >= 1 && code <= 5) || code == 13; }
 
+        /// <summary>Why a rotator move is refused while the board flags its angle unverified (#75).</summary>
+        public const string RotatorUnverifiedHint =
+            "the rotator angle is unverified (power lost during a move, rotator turned by hand while the board was off, or safe mode), " +
+            "so the board refuses rotator moves to protect the cable wrap. Confirm the angle first: IMU home (:77#), or turn the rotator " +
+            "to its home and use \"Set home here\" (:76,0#) in the AstroUniBoard debug app (Axes tab)";
+
+        /// <summary>
+        /// True when a rejected rotator move is the unverified-angle refusal of #75.
+        /// TODO(#75): the firmware's error code for this refusal is not decided yet. Until it is, any
+        /// rejection other than busy counts while the status has <see cref="StatusFlags.RotatorUnverified"/>;
+        /// once PROTOCOL.md names the code, add it to <see cref="BoardError"/> and <see cref="Describe"/> and match it here.
+        /// </summary>
+        public static bool IsRotatorUnverifiedRefusal(int code, BoardStatus status)
+        {
+            return status != null && IsRotatorUnverifiedRefusal(code, status.Flags);
+        }
+
+        public static bool IsRotatorUnverifiedRefusal(int code, StatusFlags flags)
+        {
+            return code > 0 && code != (int)BoardError.Busy && (flags & StatusFlags.RotatorUnverified) != 0;
+        }
+
         public static string Describe(int code)
         {
             switch (code)

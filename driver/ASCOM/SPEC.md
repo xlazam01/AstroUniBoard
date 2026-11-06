@@ -125,14 +125,42 @@ The same handler serves all three devices. Names are case-insensitive and all ar
 | `AstroUniBoard:SaveSettings` | — | `OK` / `ERROR: ...` (`:23#`) |
 | `AstroUniBoard:ImuHome` | — | `OK` / `ERROR: ...` (`:77#`) |
 | `AstroUniBoard:ImuCalibrate` | — | `OK` / `ERROR: ...` (`:95#`) |
-| `AstroUniBoard:Reboot` | — | `OK` / `ERROR: ...` (`:22#`, reconnects to the same serial) |
-| `AstroUniBoard:EnterDfu` | — | `OK` / `ERROR: ...` (`:31#`). While clients stay connected, the driver keeps looking for the board and reconnects when it leaves the bootloader |
+| `AstroUniBoard:Reboot` | — | `OK` / `ERROR: ...` (`:22#`, reconnects to the same serial). Refused while an axis moves, see below |
+| `AstroUniBoard:EnterDfu` | — | `OK` / `ERROR: ...` (`:31#`). While clients stay connected, the driver keeps looking for the board and reconnects when it leaves the bootloader. Refused while an axis moves |
 
 - Every action except Snapshot and Log needs the calling COM object to be connected; otherwise it
   returns `ERROR: not connected ...` (no exception). An unknown action name throws
   `ActionNotImplementedException`; a non-numeric Log parameter throws `InvalidValueException`.
 - `CommandString(":NN#", raw)` is the same as Raw, but throws `DriverException` instead of
   returning `ERROR:`. `CommandBlind` and `CommandBool` are not implemented.
+- **No reset while an axis moves (#76).** `:22#` and `:31#` reset the board at once and would cut a
+  move mid-ramp. Before sending either (Reboot, EnterDfu, and Raw/CommandString with `:22#`/`:31#`)
+  `BoardController` reads a fresh status; while the board is busy it refuses with
+  `ERROR: an axis is moving: halt both axes first (HaltAll, :30#) and wait until the board is idle (state …)`
+  and sends nothing. The firmware answers `ERR,8` in that case too; the driver never halts on its
+  own here, so a capture client can't cut a running move by accident. The debug app asks
+  "halt both axes and continue?", sends HaltAll, waits for idle (10 s) and then reboots / enters DFU.
+- **Rotator moves while the angle is unverified (#75).** When the board refuses a rotator move and
+  the status has flag 2 (rotator angle unverified), `Rotator.Move*` throws a `DriverException` that
+  says why (power loss mid-move, turned by hand, safe mode) and how to clear it (IMU home `:77#`, or
+  "Set home here" `:76,0#` in the debug app); the debug app shows the same text.
+  TODO(#75): the firmware's error code for this refusal is not decided yet; until it is, any
+  rejection other than busy counts while flag 2 is set (`BoardErrors.IsRotatorUnverifiedRefusal`).
+
+### Maintenance actions and Alpaca (#78)
+
+`Raw`, `Reboot`, `EnterDfu`, `SaveSettings` and `ImuCalibrate` (and `CommandString`) change or
+reset the board, write its EEPROM or send arbitrary commands. Over local COM they are available to
+every connected client; that is accepted (only programs on this PC can reach them, and the debug app
+needs them).
+
+**Rule: the Alpaca devices (Q30, after 2.0) will not expose them.** An Alpaca Focuser, Rotator or
+ObservingConditions lists only `Snapshot`, `Log`, `HaltAll`, `ClearError` and `ImuHome` in
+`SupportedActions`, returns `ActionNotImplementedException` for the others and does not implement
+`CommandString`, because Alpaca is reachable over the network without authentication. There is no
+setting to enable them over Alpaca: maintenance (raw console, reboot, firmware update, IMU zero
+calibration, saving settings) stays with the debug app over local COM or its direct USB connection.
+Decided by the user on 2026-11-06 (issue #78).
 
 Snapshot (keys are fixed; each object is `null` while unknown):
 

@@ -152,6 +152,8 @@ namespace AstroUniBoard.Ascom
             if (!r.Success && r.ErrorCode == (int)BoardError.Busy && WaitIdle(WaitOtherAxisMs))
                 r = Server.Controller.RotatorMoveTo(cdeg, 4000);
             if (r.Success) return;
+            if (BoardErrors.IsRotatorUnverifiedRefusal(r.ErrorCode, Server.Controller.Snapshot.Status))
+                throw new DriverException("Cannot move the rotator: " + BoardErrors.RotatorUnverifiedHint + ". (" + r.Message + ")");
             if (r.ErrorCode == (int)BoardError.BadParameter)
                 throw new InvalidValueException("The rotator cannot reach mechanical " + (cdeg / 100.0).ToString("0.##", CultureInfo.InvariantCulture) +
                                                 "° inside its cable-wrap range");

@@ -387,12 +387,19 @@ namespace AstroUniBoard.Core
                 reply = null;
                 return CommandResult.Fail("not a valid command (\":NN...#\", at most " + Commands.MaxCommandBody + " characters)", (int)BoardError.BadFormat);
             }
+            bool resets = command == Commands.Reboot || command == Commands.EnterDfu;
             CommandResult r = Submit(() =>
             {
+                if (resets)
+                {
+                    CommandResult busy = RefuseResetWhileBusy();
+                    if (busy != null) return busy;
+                }
                 got = Send(command);
                 if (snapshot.Connection != ConnectionState.Connected) return CommandResult.Fail("connection lost");
                 if (got.IsTransportFailure) return CommandResult.Fail("no valid answer from the board");
-                if (command == Commands.Reboot || command == Commands.EnterDfu) ExpectReset();
+                // only an OK means the board resets; ERR,8 (an axis is moving, #76) leaves it running
+                if ((command == Commands.Reboot || command == Commands.EnterDfu) && got.IsOk) ExpectReset();
                 else if (got.IsOk && ChangesSettings(command)) RefreshSettings(true, true);
                 return CommandResult.Ok;
             }, waitMs, false);
@@ -405,7 +412,7 @@ namespace AstroUniBoard.Core
         {
             return Submit(() =>
             {
-                CommandResult r = SendAction(Commands.Reboot);
+                CommandResult r = RefuseResetWhileBusy() ?? SendAction(Commands.Reboot);
                 if (r.Success) ExpectReset();
                 return r;
             }, waitMs, false);
@@ -416,7 +423,7 @@ namespace AstroUniBoard.Core
         {
             return Submit(() =>
             {
-                CommandResult r = SendAction(Commands.EnterDfu);
+                CommandResult r = RefuseResetWhileBusy() ?? SendAction(Commands.EnterDfu);
                 if (r.Success)
                 {
                     wantConnected = false;
@@ -426,6 +433,22 @@ namespace AstroUniBoard.Core
                 }
                 return r;
             }, waitMs, false);
+        }
+
+        /// <summary>Message of a reboot / DFU request refused because an axis moves (#76).</summary>
+        public const string ResetWhileBusyMessage = "an axis is moving: halt both axes first (HaltAll, :30#) and wait until the board is idle";
+
+        /// <summary>
+        /// :22# and :31# reset the board at once and would cut a move mid-ramp (#76). Newer firmware
+        /// answers ERR,8 itself; this fresh status check also covers older firmware. Null = go ahead.
+        /// </summary>
+        private CommandResult RefuseResetWhileBusy()
+        {
+            Poll();
+            if (snapshot.Connection != ConnectionState.Connected) return CommandResult.Fail("connection lost");
+            BoardStatus st = snapshot.Status;
+            if (st != null && st.Busy) return CommandResult.Fail(ResetWhileBusyMessage + " (state " + st.State + ")", (int)BoardError.Busy);
+            return null;
         }
 
         private CommandResult Submit(Func<CommandResult> run, int waitMs, bool urgent)

@@ -505,6 +505,47 @@ namespace AstroUniBoard.Core.Tests
         }
 
         [Fact]
+        public void RebootAndDfuAreRefusedWhileAnAxisMoves()
+        {
+            var b = new FakeBoard { MoveMs = 1500, RefuseResetWhileBusy = false };   // also on firmware before #76
+            BoardController c = Connected(b);
+            Assert.True(c.FocuserMoveTo(6000).Success);
+            CommandResult r = c.Reboot();
+            Assert.False(r.Success);
+            Assert.Equal((int)BoardError.Busy, r.ErrorCode);
+            Assert.Contains("halt both axes first", r.Message);
+            Assert.False(c.EnterDfu().Success);
+            Reply reply;
+            Assert.False(c.Raw(Commands.EnterDfu, out reply).Success);
+            Assert.DoesNotContain("22", b.Received);
+            Assert.DoesNotContain("31", b.Received);
+            Assert.True(c.Snapshot.IsConnected);
+
+            Assert.True(c.HaltAll().Success);
+            Assert.True(WaitFor(() => !c.Snapshot.IsBusy, 1000));
+            Assert.True(c.EnterDfu().Success);
+        }
+
+        [Fact]
+        public void UnverifiedRotatorRefusalIsRecognised()
+        {
+            // TODO(#75): use the firmware's code once PROTOCOL.md names it; 7 stands in for it
+            var b = new FakeBoard { RefuseUnverifiedRotatorCode = 7 };
+            b.Flags |= (int)StatusFlags.RotatorUnverified;
+            BoardController c = Connected(b);
+            CommandResult r = c.RotatorMoveTo(0);
+            Assert.False(r.Success);
+            Assert.True(BoardErrors.IsRotatorUnverifiedRefusal(r.ErrorCode, c.Snapshot.Status));
+
+            b.Flags &= ~(int)StatusFlags.RotatorUnverified;
+            Assert.True(WaitFor(() => !c.Snapshot.Status.Has(StatusFlags.RotatorUnverified), 1000));
+            b.WrapMin = 0; b.WrapMax = 100;
+            r = c.RotatorMoveTo(20000);                       // outside the wrap: a real limit, no hint
+            Assert.Equal((int)BoardError.BadParameter, r.ErrorCode);
+            Assert.False(BoardErrors.IsRotatorUnverifiedRefusal(r.ErrorCode, c.Snapshot.Status));
+        }
+
+        [Fact]
         public void ConcurrentCallersAllGetBoundedAnswers()
         {
             var b = new FakeBoard();
