@@ -411,7 +411,7 @@ Example:
 | 93 | set sensor selection | `0` / `1` / `2` | `OK#` / `ERR,7` |
 | 94 | IMU reading | | `I,<roll>,<tilt>,<ax>,<ay>,<az>#` / `ERR,14` |
 | 95 | IMU zero calibration (automatic, moves the rotator) | | `OK#` / `ERR,8` / `ERR,14` / `ERR,15` |
-| 96 | IMU calibration data | | `C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>#` |
+| 96 | IMU calibration data | | `C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>,<cx>,<cy>,<cz>#` |
 | 97–99 | — reserved | | `ERR,10` |
 
 **Environment.** `t` and `dew` in 0.1 °C, `rh` in 0.1 %RH. `:90` returns the reading the drivers
@@ -437,10 +437,15 @@ reading; `power_cycles` counts supply restarts of the on-board sensor. Readings 
   with sticky error 3 when a step is not about 90° (70..110°: rotator slipped, IMU moved). On success
   `g0` and `n` are written to the EEPROM at once (not waiting for `:23#`), status flag 7 clears and
   the current angle is set to 0.
-- Roll is the signed angle from `g0` to the current gravity, both projected onto the plane normal to
-  `n`, sign by `n`. It is meaningful only when gravity has a component in that plane: within ~20° of
+- The three captures also give the centre `c` of the gravity circle. Its part in the plane normal to
+  `n` is the accelerometer offset in that plane (rejected above 300 mg). Roll and tilt are measured
+  from `c`, so an offset no longer bends the roll away from zero. The offset along `n` cannot be seen
+  by rotating and stays in the tilt (about 2° per 40 mg).
+- Roll is the signed angle from `g0 − c` to the current gravity `− c`, both projected onto the plane
+  normal to `n`, sign by `n`. It is meaningful only when gravity has a component in that plane: within ~20° of
   vertical, `:77` and `:95` answer `ERR,15`.
-- `:96` returns the stored calibration (`valid` 0/1, `g0` in mg, `n` in 1/10000).
+- `:96` returns the stored calibration (`valid` 0/1, `g0` in mg, `n` in 1/10000, `c` in mg; `c` is
+  0 in a calibration stored by an older firmware).
 
 Example:
 

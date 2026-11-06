@@ -86,6 +86,32 @@ static void test_calibrate_at_elevation() {
     }
 }
 
+static ImuV3 plus(const ImuV3& a, const ImuV3& b) { return ImuV3{ a.x + b.x, a.y + b.y, a.z + b.z }; }
+
+static void test_accelerometer_offset() {
+    // a sensor offset shifts the gravity circle; roll and tilt are measured from its centre
+    const ImuV3 b{ 40.0f, -60.0f, 35.0f };
+    for (float e = -30.0f; e <= 30.0f; e += 30.0f) {
+        ImuCalibration c{};
+        TEST_ASSERT_EQUAL(FW_OK, imuMathCalibrate(plus(ge(0, e), b), plus(ge(90, e), b), plus(ge(180, e), b), c));
+        TEST_ASSERT_INT_WITHIN(2, -10000, c.n[0]);
+        TEST_ASSERT_INT_WITHIN(1, 0, c.c[0]);            // only the in-plane part (y, z) is kept
+        TEST_ASSERT_INT_WITHIN(1, -60, c.c[1]);
+        TEST_ASSERT_INT_WITHIN(1, 35, c.c[2]);
+        TEST_ASSERT_INT_WITHIN(3, 4000, imuMathRollCdeg(c, plus(ge(40, e), b)));
+        TEST_ASSERT_INT_WITHIN(3, -12000, imuMathRollCdeg(c, plus(ge(-120, e), b)));
+        TEST_ASSERT_INT_WITHIN(250, 9000 - (int)(e * 100), imuMathTiltCdeg(c, plus(ge(70, e), b)));   // offset along n stays in (b.x = 40 mg)
+    }
+    // an old (version 1) record has c = 0 and still works as before
+    ImuCalibration old = horizontalCal();
+    old.c[0] = old.c[1] = old.c[2] = 0;
+    TEST_ASSERT_INT_WITHIN(2, 9000, imuMathRollCdeg(old, g(90)));
+    // an implausibly large offset is not a sensor offset
+    const ImuV3 big{ 0.0f, 400.0f, 0.0f };
+    ImuCalibration c{};
+    TEST_ASSERT_EQUAL(FW_ERR_CALIB_FAILED, imuMathCalibrate(plus(g(0), big), plus(g(90), big), plus(g(180), big), c));
+}
+
 static void test_calibrate_rejects() {
     ImuCalibration c{};
     // optical axis near vertical: gravity barely moves (80 deg elevation)
@@ -119,6 +145,7 @@ int main() {
     RUN_TEST(test_tilt);
     RUN_TEST(test_near_vertical);
     RUN_TEST(test_calibrate_at_elevation);
+    RUN_TEST(test_accelerometer_offset);
     RUN_TEST(test_calibrate_rejects);
     RUN_TEST(test_cal_valid);
     return UNITY_END();

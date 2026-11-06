@@ -66,10 +66,11 @@ void protocolEnv(uint8_t cmd, char* params) {
             break;
         }
 
-        case 96: {  // C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>#
+        case 96: {  // C,<valid>,<g0x>,<g0y>,<g0z>,<nx>,<ny>,<nz>,<cx>,<cy>,<cz>#
             const ImuCalibration& c = imuCalData();
-            protoPrintf("C,%u,%d,%d,%d,%d,%d,%d#", (unsigned)c.valid,
-                        (int)c.g0[0], (int)c.g0[1], (int)c.g0[2], (int)c.n[0], (int)c.n[1], (int)c.n[2]);
+            protoPrintf("C,%u,%d,%d,%d,%d,%d,%d,%d,%d,%d#", (unsigned)c.valid,
+                        (int)c.g0[0], (int)c.g0[1], (int)c.g0[2], (int)c.n[0], (int)c.n[1], (int)c.n[2],
+                        (int)c.c[0], (int)c.c[1], (int)c.c[2]);
             break;
         }
 
