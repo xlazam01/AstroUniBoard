@@ -63,6 +63,30 @@ private:
     uint16_t idleOffS = 0;
     bool     reverse = false;
     uint32_t startMs = 0;
+
+    // Ramp state (AVR446-style per-step delay recursion, timer ticks). Written by moveTo() before
+    // the timer starts, then owned by the ISR.
+    enum Phase : uint8_t { PH_ACCEL, PH_RUN, PH_DECEL };
+    volatile uint8_t  phase = PH_ACCEL;
+    volatile uint32_t remain = 0;       // steps left including lead steps
+    volatile uint32_t total = 0;        // steps of this move including lead steps
+    volatile uint32_t delayTicks = 0;   // period to the next step
+    volatile uint32_t restTicks = 0;    // remainder carried by the recursion
+    volatile uint32_t rampN = 0;        // accel steps done (= steps needed to stop from this speed)
+    volatile uint32_t decelLeft = 0;    // decel steps left
+    volatile bool     haltReq = false;
+    volatile bool     settle = false;   // first ISR waits for the driver enable settle time
+    uint32_t minDelay = 0;              // cruise period
+    int8_t   dirStep = 1;               // +1 / -1 position change per counted step
+    bool     enabled = false;           // driver EN active
+    bool     wasBusy = false;
+    uint32_t stopMs = 0;                // millis() when the last move ended
+    volatile uint32_t* stepSet = nullptr;   // GPIO BSRR / BRR of the STEP pin
+    volatile uint32_t* stepClr = nullptr;
+    uint32_t stepMask = 0;
+
+    void finishIsr();
+    void enableDriver(bool on);
 };
 
 extern Axis axisFoc;
