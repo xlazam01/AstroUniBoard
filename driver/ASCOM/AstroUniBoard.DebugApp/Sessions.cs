@@ -247,8 +247,9 @@ namespace AstroUniBoard.DebugApp
             {
                 long s = Convert.ToInt64(J.Get(d, "seq") ?? 0L, CultureInfo.InvariantCulture);
                 if (s <= afterSeq) continue;
+                // "...Z" / "+01:00" are honoured; a time without an offset (the LocalServer's) is local
                 DateTime t;
-                if (!DateTime.TryParse(J.Str(d, "time"), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out t)) t = DateTime.UtcNow;
+                if (!DateTime.TryParse(J.Str(d, "time"), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeLocal, out t)) t = DateTime.UtcNow;
                 list.Add(new LogEntry { Seq = s, Time = t, Text = J.Str(d, "text") });
             }
             return list;
