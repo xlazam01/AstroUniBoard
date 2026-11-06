@@ -25,12 +25,24 @@ Build output: `fw-onstepx/.pio/build/nucleo_g0b1re/firmware.bin`
 | Upload protocol | DFU |
 | Optimization | `-Os -std=gnu++17` |
 | USB CDC flags | `-DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED` |
+| Crystal | `-DHSE_VALUE=8000000` (Y1, 8 MHz) |
+
+### System clock
+
+`fw-onstepx/src/clock_config.cpp` overrides the weak `SystemClock_Config()` of the `btt_ebb42_v1_1`
+variant (same code as OpenWheel). The variant runs SYSCLK from the crystal but leaves USB on the
+untrimmed internal HSI48, outside the USB ±0.25 % tolerance, and hangs in `Error_Handler()` if the
+crystal does not start. The override:
+
+- **Crystal OK:** 8 MHz HSE → PLL (M=1, N=24) → SYSCLK 64 MHz (R=3), USB 48 MHz (Q=4).
+- **Crystal fails:** HSI 16 MHz → PLL → SYSCLK 64 MHz, USB from HSI48 trimmed by the CRS from the
+  USB start-of-frame packets — the board still enumerates.
 
 ### Flash budget
 
 | Metric | Value |
 |--------|-------|
-| Flash used | 122,244 / 131,072 bytes (93.3%) |
+| Flash used | 125,072 / 131,072 bytes (95.4%) — clock override adds ~950 bytes |
 | RAM used | ~8.2% |
 
 > Debug level must stay at `ON`, not `VERBOSE`. VERBOSE adds ~15 KB of string literals and overflows the 128 KB flash.
