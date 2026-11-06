@@ -123,18 +123,20 @@ namespace AstroUniBoard.DebugApp.Tests
             }
         }
 
-        /// <summary>Also needs ASTROUNIBOARD_DFU_IMAGE (a .bin built for this board) and dfu-util. Flashes it.</summary>
+        /// <summary>Also needs ASTROUNIBOARD_DFU_IMAGE (a .bin built for this board) and dfu-util. Flashes it. ASTROUNIBOARD_DFU_FORCE=1 accepts an image without marker.</summary>
         [Fact]
         public void FirmwareUpdateOverLoopbackOnRealBoard()
         {
             string image = Environment.GetEnvironmentVariable("ASTROUNIBOARD_DFU_IMAGE");
             if (Port == null || string.IsNullOrEmpty(image)) return;
-            var dfu = new DfuUpdater { DfuUtilPath = DfuUpdater.FindDfuUtil() };
+            DfuUtilLocation found = DfuUpdater.FindDfuUtil();
+            var dfu = new DfuUpdater { DfuUtilPath = found != null ? found.Path : null };
             Assert.NotNull(dfu.DfuUtilPath);
             using (var s = new AscomSession(() => new LoopbackDriver(new DirectSession(Port == "auto" ? null : Port))))
             {
                 s.Open();
-                Assert.True(dfu.Update(s, image, line => output.WriteLine(line)));
+                // ASTROUNIBOARD_DFU_FORCE=1 accepts an image without the marker (built before #79)
+                Assert.True(dfu.Update(s, image, line => output.WriteLine(line), Environment.GetEnvironmentVariable("ASTROUNIBOARD_DFU_FORCE") == "1"));
                 Assert.True(s.Snapshot().IsConnected);
             }
         }

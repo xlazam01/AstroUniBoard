@@ -58,6 +58,41 @@ namespace AstroUniBoard.DebugApp
         }
 
         public static string FromCommandResult(CommandResult c) { return c.Success ? "OK" : ErrorPrefix + c.Message; }
+
+        /// <summary>
+        /// The explanation for a rotator move (:71 / :72) the board refused while its angle is
+        /// unverified (#75), or null for any other command or reply.
+        /// </summary>
+        public static string RotatorRefusalHint(string command, string reply, StatusView status)
+        {
+            if (command == null || status == null || !(command.StartsWith(":71", StringComparison.Ordinal) || command.StartsWith(":72", StringComparison.Ordinal))) return null;
+            int code;
+            if (reply == null || !reply.StartsWith("ERR,", StringComparison.Ordinal) ||
+                !int.TryParse(reply.Substring(4), NumberStyles.None, CultureInfo.InvariantCulture, out code)) return null;
+            return BoardErrors.IsRotatorUnverifiedRefusal(code, (StatusFlags)status.Flags) ? BoardErrors.RotatorUnverifiedHint : null;
+        }
+    }
+
+    internal static class SessionExtensions
+    {
+        /// <summary>
+        /// Halts both axes and waits until the board reports idle (before :22# / :31#, #76).
+        /// Null when the board is idle, else why not. Blocking: call it off the UI thread.
+        /// </summary>
+        public static string HaltAndWaitIdle(this IBoardSession s, int timeoutMs = 10000)
+        {
+            string r = s.Do(BoardAction.HaltAll);
+            if (!Replies.IsOk(r)) return "halting failed: " + r;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (true)
+            {
+                BoardView v = s.Snapshot();
+                if (!v.IsConnected) return "the board is not connected";
+                if (v.Status != null && !v.Status.Busy) return null;
+                if (sw.ElapsedMilliseconds >= timeoutMs) return "the board was still busy " + timeoutMs / 1000 + " s after halting";
+                System.Threading.Thread.Sleep(100);
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------- direct

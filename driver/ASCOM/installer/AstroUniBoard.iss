@@ -11,6 +11,11 @@
 #define DebugExe "AstroUniBoard.DebugApp.exe"
 #define ServerDir "..\AstroUniBoard.Ascom\bin\Release\net48"
 #define DebugDir "..\AstroUniBoard.DebugApp\bin\Release\net48"
+; dfu-util 0.11 for the debug app's firmware update (#79): the PlatformIO package tool-dfuutil 1.11.0
+; (GPL-2.0-or-later, libusb LGPL-2.1). Override with /DDfuUtilDir=<folder with bin\dfu-util.exe and COPYING>.
+#ifndef DfuUtilDir
+  #define DfuUtilDir GetEnv("USERPROFILE") + "\.platformio\packages\tool-dfuutil"
+#endif
 
 [Setup]
 ; Fixed GUID: identifies the application for upgrades and uninstall. Do not change.
@@ -44,6 +49,12 @@ Source: "{#ServerDir}\AstroUniBoard.Core.dll"; DestDir: "{app}"; Flags: ignoreve
 Source: "{#DebugDir}\{#DebugExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#DebugDir}\{#DebugExe}.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+; dfu-util next to the debug app, the only copy it uses without asking. GPL-2: the licence and the
+; source links ship with it.
+Source: "{#DfuUtilDir}\bin\dfu-util.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#DfuUtilDir}\bin\libusb-1.0.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#DfuUtilDir}\COPYING"; DestDir: "{app}"; DestName: "dfu-util-COPYING.txt"; Flags: ignoreversion
+Source: "dfu-util-SOURCE.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Starting the server without arguments opens the setup dialog

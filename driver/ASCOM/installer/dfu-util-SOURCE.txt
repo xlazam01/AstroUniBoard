@@ -1,0 +1,29 @@
+dfu-util — Device Firmware Upgrade Utilities
+=============================================
+
+This installer ships dfu-util 0.11 for Windows next to the AstroUniBoard control & debug app,
+which uses it to flash the board's firmware over USB DFU:
+
+  dfu-util.exe     dfu-util 0.11, licensed under the GNU General Public License, version 2 or
+                   (at your option) any later version. The licence text is in dfu-util-COPYING.txt.
+                   Copyright 2005-2009 Weston Schmidt, Harald Welte and OpenMoko Inc.,
+                   2010-2021 Tormod Volden and others (see the AUTHORS file of the source).
+  libusb-1.0.dll   libusb 1.0.24, licensed under the GNU Lesser General Public License,
+                   version 2.1 or later.
+
+The binaries are unmodified. They come from the PlatformIO package "tool-dfuutil" 1.11.0
+(https://registry.platformio.org/tools/platformio/tool-dfuutil), which repackages the
+upstream release.
+
+Corresponding source code
+-------------------------
+  dfu-util 0.11:   https://dfu-util.sourceforge.net/releases/dfu-util-0.11.tar.gz
+                   git: https://git.code.sf.net/p/dfu-util/dfu-util (tag v0.11)
+  libusb 1.0.24:   https://github.com/libusb/libusb/releases/tag/v1.0.24
+
+If these links stop working, a copy of the source is available on request for three years from
+the date of the release that contains it: open an issue at
+https://github.com/xlazam01/AstroUniBoard/issues
+
+dfu-util is a separate program; the AstroUniBoard app only starts it. The AstroUniBoard driver and
+app themselves are under the licence in LICENSE.

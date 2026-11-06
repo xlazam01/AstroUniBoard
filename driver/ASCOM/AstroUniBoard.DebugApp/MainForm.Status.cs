@@ -56,7 +56,7 @@ namespace AstroUniBoard.DebugApp
             }); by += 34;
             Btn(p, "Reboot (:22#)", bx, by, 124, async (s, e) =>
             {
-                if (Confirm("Reboot the board? A running move is cut; the connection comes back by itself.")) await DoAction(BoardAction.Reboot);
+                if (Confirm("Reboot the board? The connection comes back by itself.") && await EnsureIdle("reboot")) await DoAction(BoardAction.Reboot);
             });
             foreach (Control c in p.Controls) if (c is Button && c.Left == bx) c.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         }

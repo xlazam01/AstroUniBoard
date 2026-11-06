@@ -54,6 +54,12 @@ namespace AstroUniBoard.Core.Tests
         public bool StuckMoving;
         public bool DropReplyToMove;
         public bool NoSensor;                // :90# answers ERR,14
+        /// <summary>:22# / :31# answer ERR,8 while an axis moves (#76); false = firmware before that fix.</summary>
+        public bool RefuseResetWhileBusy = true;
+        /// <summary>Halts answer OK but the move goes on.</summary>
+        public bool HaltIgnored;
+        /// <summary>Non-zero: rotator moves are refused with this code while flag 2 (angle unverified) is set (#75).</summary>
+        public int RefuseUnverifiedRotatorCode;
         public int Warnings;
         public Misbehavior Mode = Misbehavior.None;
         public int ReplyDelayMs;
@@ -188,12 +194,15 @@ namespace AstroUniBoard.Core.Tests
             {
                 case "33": Reply(Status()); return;
                 case "30": case "53": case "73":
-                    HaltCount++; state = 1; focTarget = -1; rotTarget = -1; Reply("OK"); return;
+                    HaltCount++;
+                    if (!HaltIgnored) { state = 1; focTarget = -1; rotTarget = -1; }
+                    Reply("OK"); return;
                 case "34":
                     if (body == "34") Reply("E," + ErrorCode); else { ErrorCode = 0; Reply("OK"); }
                     return;
                 case "40": Reply(string.Format(CultureInfo.InvariantCulture, "H,312,3297,-1,-1,0,{0:X},0,0", Warnings)); return;
-                case "22": case "31": Reply("OK"); return;
+                case "22": case "31":
+                    Reply(RefuseResetWhileBusy && state != 1 ? "ERR,8" : "OK"); return;
                 case "23": Reply("OK"); return;
                 case "50": Reply(FocPos.ToString(CultureInfo.InvariantCulture)); return;
                 case "54": Reply(FocMax.ToString(CultureInfo.InvariantCulture)); return;
@@ -227,6 +236,7 @@ namespace AstroUniBoard.Core.Tests
                 case "71":
                     if (!Arg(body, out v) || v < 0 || v > 35999) { Reply("ERR,7"); return; }
                     if (state != 1) { Reply("ERR,8"); return; }
+                    if (RefuseUnverifiedRotatorCode != 0 && (Flags & 2) != 0) { Reply("ERR," + RefuseUnverifiedRotatorCode); return; }
                     int best = int.MinValue;
                     foreach (int c in new[] { v - 36000, v, v + 36000 })
                         if (c >= WrapMin && c <= WrapMax && (best == int.MinValue || Math.Abs(c - RotCdeg) < Math.Abs(best - RotCdeg))) best = c;

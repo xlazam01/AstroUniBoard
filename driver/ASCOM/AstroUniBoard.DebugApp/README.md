@@ -2,7 +2,8 @@
 
 WinForms, net48, no extra assemblies: `AstroUniBoard.DebugApp.exe` + `AstroUniBoard.Core.dll`.
 JSON comes from `System.Web.Extensions` (`JavaScriptSerializer`), which is part of .NET Framework 4.8,
-so the installer has nothing extra to ship. dfu-util is optional (see Firmware).
+so the installer has nothing extra to ship for the app itself. The installer also puts `dfu-util.exe`
+next to it for the firmware update (see Firmware).
 
 ## Connection
 
@@ -40,11 +41,22 @@ On connect the app checks that `SupportedActions` contains `AstroUniBoard:Snapsh
 | Environment | `:90#`, both SHT31 `:91#` with status decoded, sensor selection `:92#`/`:93` |
 | Console | raw commands, history (Up/Down), `ERR,n` explained, structured replies decoded; every command any tab sends is echoed |
 | Log | driver log (or the Core log, direct) + what the app sent; export to a text file |
-| Firmware | DFU update: image check (≤ 128 KB), no other bootloader present, `:31#`, wait for `0483:df11`, `dfu-util -d 0483:df11 -a 0 -s 0x08000000:leave -D <bin>`, reconnect, compare firmware/serial — the flow of `fw-onstepx/tools/firmware_manager` (PR #62). "Only enter DFU" for other tools |
+| Firmware | DFU update: image check (below), halt a moving axis (asks first, #76), no other bootloader present, `:31#`, wait for `0483:df11`, `dfu-util -d 0483:df11 -a 0 -s 0x08000000:leave -D <bin>`, reconnect, compare firmware/serial — the flow of `fw-onstepx/tools/firmware_manager` (PR #62). "Only enter DFU" for other tools |
 
-dfu-util is looked up next to the exe, on PATH, then in `~/.platformio/packages/tool-dfuutil/bin`.
-The installer can ship `dfu-util.exe` + `libusb-1.0.dll` next to the app (GPL-2.0; ship its source
-offer). The STM32 bootloader needs the WinUSB driver once (Zadig).
+Image check before `:31#` (#79):
+- a `.bin` of at most 128 KB;
+- the vector table: word 0 (initial SP) in SRAM `0x20000001–0x20024000`, word 1 (reset vector)
+  odd and inside the flash `0x08000000–0x08020000` and inside the image (catches truncated files);
+- the marker `ASTROUNIBOARD-IMG:<model>;` the firmware embeds (`ASTROUNIBOARD-IMG:REV2;`), compared
+  with the model of the identify reply. No marker (images built before it): a warning you must
+  confirm. Another model: not flashed unless you force it (two confirmations).
+
+dfu-util: the copy installed next to the exe is used without asking. Otherwise the app finds one on
+`PATH` (absolute entries only), then in `~/.platformio/packages/tool-dfuutil/bin`, and asks once
+before it uses that copy or one you typed in (a copy you pick with Browse counts as your OK). The
+full path used is logged. The installer ships dfu-util 0.11 (`dfu-util.exe`, `libusb-1.0.dll`; GPL-2.0
+and LGPL-2.1, licence and source links in `dfu-util-COPYING.txt` / `dfu-util-SOURCE.txt`). The STM32
+bootloader needs the WinUSB driver once (Zadig).
 
 ## Command line
 
