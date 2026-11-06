@@ -109,7 +109,12 @@ Key tool: `enter_dfu_and_upload(port, firmware_path)` — sends `:EDFU#`, waits 
 
 ## License
 
-Firmware is licensed under the GPL (inherited from OnStepX). See [fw-onstepx/src/LICENSE](fw-onstepx/src/LICENSE).
+- Firmware, software and tools (`fw/`, `tools/`): GPL-3.0, see [LICENSE](LICENSE).
+- Hardware design files (`HW/`): CERN-OHL-S-2.0, see [LICENSE-HARDWARE](LICENSE-HARDWARE).
+- `fw-onstepx/` is derived from [OnStepX](https://github.com/hjd1964/OnStepX) and stays GPL-3,
+  see [fw-onstepx/src/LICENSE](fw-onstepx/src/LICENSE).
+
+Same licensing as the sibling project OpenWheel.
 
 ## Credits
 
