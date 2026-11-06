@@ -25,6 +25,11 @@ private:
     void handleCommand();
 };
 
+// --- identify gate (#58): after power-on, and whenever a host opens or reconfigures the port, only
+// :25# ping and :32# identify are accepted; everything else answers ERR,16 until :32# has been
+// answered. Clients re-identify on ERR,16 (same USB serial) and repeat the command. ---
+void protoSetIdentified();
+
 // --- replies (exactly one per command; each is a single USB write) ---
 void protoReply(const char* s, int n);
 void protoOk();                                   // "OK#"

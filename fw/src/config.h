@@ -4,7 +4,7 @@
 
 #define FIRMWARE_VERSION     "2.0.0-dev"
 #define FIRMWARE_ID          "FW2.0.0"     // identify field (PROTOCOL.md §3.1)
-#define PROTOCOL_VERSION     1
+#define PROTOCOL_VERSION     2   // 2: identify gate (ERR,16), IMU calibration with three captures
 #define BOARD_MODEL          "REV2"
 
 // identify caps bits (PROTOCOL.md §3.1): what this firmware build supports

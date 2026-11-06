@@ -22,6 +22,7 @@ USB_VID = 0x1209
 USB_PID = 0x0001
 CMD_TIMEOUT = 1.0
 SAVE_TIMEOUT = 2.0      # :23# writes the EEPROM
+READ_POLL_S = 0.05      # serial read timeout, set once before open (never changed while open)
 
 # values the firmware enforces (fw/src/tmc2209.h, protocol_common.cpp)
 TMC_MAX_RUN_MA = 1500
@@ -53,13 +54,16 @@ def identify(port):
 
 
 def find_port(usb_serial=None):
-    """First 1209:0001 port that identifies as an AstroUniBoard (and has usb_serial, if given)."""
+    """First 1209:0001 port that identifies as an AstroUniBoard. With usb_serial (a board this
+    session already identified) the USB serial number alone selects it and nothing is sent."""
     if list_ports is None:
         return None
     for p in list_ports.comports():
         if p.vid != USB_VID or p.pid != USB_PID:
             continue
-        if usb_serial and (p.serial_number or "").upper() != usb_serial.upper():
+        if usb_serial:
+            if (p.serial_number or "").upper() == usb_serial.upper():
+                return p.device
             continue
         if identify(p.device).startswith(IDENTIFY_PREFIX):
             return p.device
@@ -87,7 +91,7 @@ class Board:
     # --- transport ---
     def open(self):
         s = serial.Serial()
-        s.port, s.baudrate, s.timeout, s.write_timeout = self.port, 115200, CMD_TIMEOUT, 1.0
+        s.port, s.baudrate, s.timeout, s.write_timeout = self.port, 115200, READ_POLL_S, 1.0
         s.dtr = False
         s.open()
         s.reset_input_buffer()
@@ -97,9 +101,11 @@ class Board:
         if self.ser and self.ser.is_open:
             self.ser.close()
 
-    def reconnect(self, timeout=20.0):
+    def reconnect(self, timeout=20.0, identify=True):
         """After a reboot: wait for the same board (same USB serial number, identifies as
-        ASTROUNIBOARD) to come back. Never switches to another device with the same VID/PID."""
+        ASTROUNIBOARD) to come back. Never switches to another device with the same VID/PID.
+        identify=True sends :32# so the firmware accepts other commands again (gate, #58);
+        identify=False leaves the board locked (only :25# was sent)."""
         self.close()
         end = time.time() + timeout
         while time.time() < end:
@@ -112,6 +118,9 @@ class Board:
                 self.port = port
                 self.open()
                 if self.raw(":25#") == "OK#":
+                    if identify:
+                        ident = self.raw(":32#")
+                        assert ident.startswith(IDENTIFY_PREFIX), f"{self.port}: {ident!r}"
                     return
             except (serial.SerialException, OSError):
                 pass
@@ -125,16 +134,17 @@ class Board:
         self.ser.flush()
 
     def raw(self, text, timeout=CMD_TIMEOUT):
-        """Send text, return the reply up to and including '#', or '' on timeout."""
+        """Send text, return the reply up to and including '#', or '' on timeout.
+        Never changes the port settings while open: any reconfiguration (timeout, baud) sends
+        CDC class requests that lock the board again (identify gate, #58)."""
         self.ser.reset_input_buffer()
         self.send(text)
-        self.ser.timeout = timeout
         out = b""
         end = time.time() + timeout
         while time.time() < end:
-            c = self.ser.read(1)
+            c = self.ser.read(1)            # port read timeout is short (READ_POLL_S)
             if not c:
-                break
+                continue
             out += c
             if c == b"#":
                 break
