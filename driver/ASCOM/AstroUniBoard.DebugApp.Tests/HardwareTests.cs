@@ -1,7 +1,9 @@
 // Runs only with a real board: set ASTROUNIBOARD_PORT=COM9 (or "auto"). Small moves only:
 // focuser +50 steps and back, rotator +1° and back. Without the variable the tests return at once.
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using AstroUniBoard.Core;
 using Xunit;
@@ -35,6 +37,55 @@ namespace AstroUniBoard.DebugApp.Tests
         {
             if (Port == null) return;
             using (var s = new AscomSession(() => new LoopbackDriver(new DirectSession(Port == "auto" ? null : Port)))) Exercise(s);
+        }
+
+        /// <summary>
+        /// ASTROUNIBOARD_ASCOM=1: the installed LocalServer, read only (no moves), alongside whatever
+        /// other client is connected. Closing the app must not drop that client.
+        /// </summary>
+        [Fact]
+        public void InstalledDriverReadOnly()
+        {
+            if (Environment.GetEnvironmentVariable("ASTROUNIBOARD_ASCOM") != "1") return;
+            int before = Clients();
+            using (var s = new AscomSession())
+            {
+                s.Open();
+                output.WriteLine(s.Description + ", clients before " + before);
+                BoardView v = s.Snapshot();
+                Assert.True(v.IsConnected);
+                Assert.NotNull(v.Focuser);
+                Assert.Equal(before + 1, Clients());
+                foreach (string c in new[] { Commands.Identify, Commands.Status, Commands.Housekeeping, Commands.Imu, Commands.EnvironmentDetail, Commands.GetStallGuard(Axis.Focuser), ":70#" })
+                {
+                    string r = s.Raw(c);
+                    output.WriteLine(c + " → " + Replies.Explain(r) + "   " + MainForm.Decode(r));
+                    Assert.False(Replies.IsFailure(r), c + " → " + r);
+                }
+                Assert.Equal("ERR,7", s.Raw(Commands.FocuserMoveBy(99999999)));
+                Assert.Equal("ERR,10", s.Raw(":99#"));
+                IList<LogEntry> log = s.ReadLog(0);
+                Assert.NotEmpty(log);
+                foreach (LogEntry e in log.Skip(Math.Max(0, log.Count - 5))) output.WriteLine("log " + e.Seq + " " + e.Time.ToLocalTime().ToString("HH:mm:ss") + " " + e.Text);
+                Assert.True(Math.Abs((DateTime.UtcNow - log.Last().Time).TotalHours) < 0.9, "log time looks shifted: " + log.Last().Time);
+            }
+            Assert.Equal(before, Clients());
+        }
+
+        private static int Clients()
+        {
+            {
+                // Snapshot works without Connected; read host.clients without connecting this instance
+                var t = Type.GetTypeFromProgID(AscomSession.FocuserProgId);
+                object d = Activator.CreateInstance(t);
+                try
+                {
+                    string json = (string)t.InvokeMember("Action", System.Reflection.BindingFlags.InvokeMethod, null, d, new object[] { AscomSession.ActionSnapshot, "" });
+                    var o = (IDictionary<string, object>)new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(json);
+                    return J.Int(J.Obj(o, "host"), "clients");
+                }
+                finally { System.Runtime.InteropServices.Marshal.ReleaseComObject(d); }
+            }
         }
 
         /// <summary>Also needs ASTROUNIBOARD_DFU_IMAGE (a .bin built for this board) and dfu-util. Flashes it.</summary>
