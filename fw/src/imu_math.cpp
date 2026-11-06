@@ -3,23 +3,16 @@
 // Roll sign (header contract: roll(g90) = +9000).
 // The board turns with the camera. Turning the camera by +theta about the optical axis a (rotator
 // direction) turns the chip frame by +theta, so gravity seen in chip axes turns by -theta about a:
-//     g(theta) = Rot(a, -theta) g0.
-// For g0 perpendicular to a and theta = +90 deg this gives g90 = -(a x g0), hence
-//     g0 x g90 = -g0 x (a x g0) = -a |g0|^2      ->  n = g0 x g90 / |..| = -a.
-// So g(theta) = Rot(-n, -theta) g0 = Rot(n, +theta) g0: measured about n (right hand), the angle from
-// g0 to the current gravity is +theta. With both vectors projected onto the plane normal to n,
-//     roll = atan2(n . (g0p x gp), g0p . gp)     (n . (g0p x gp) = n . (g0 x g), the n parts drop out)
-// which is +90 deg at the +90 deg capture by construction (n . (g0 x g90) = |g0 x g90| > 0). The
-// rotator therefore reaches the IMU zero by moving -roll. The sign does not depend on how the board
-// is mounted (Triton: upside down) nor on the accelerometer sign convention (both g0 and g are read
-// the same way).
-//
-// Limitation: n = g0 x g90 is the true rotation axis only when the optical axis is horizontal during
-// :95. With the axis at elevation e, cos(g0, g90) = sin^2 e, so the 70..110 deg check accepts
-// e <= ~36 deg, and n is off the true axis by atan(sqrt(2) tan e) (e = 10 deg: 14 deg, 20 deg: 27 deg;
-// checked numerically). Roll is 0 at the g0 orientation at any e, but at +90 deg it reads the angle
-// between g0 and g90 (e = 10: 88.3 deg, e = 20: 83.3 deg). Calibrate with the scope close to horizontal.
-// A third capture at +180 deg would give the exact axis for any e: n ~ (g90 - g0) x (g180 - g90).
+//     g(theta) = Rot(a, -theta) g0 = Rot(-a, +theta) g0.
+// g0, g90 and g180 lie on a circle about the axis and are passed in this order, so
+//     n = (g90 - g0) x (g180 - g90) / |..|  =  -a,
+// and measured about n (right hand) the angle from g0 to the current gravity is +theta. With both
+// vectors projected onto the plane normal to n,
+//     roll = atan2(n . (g0p x gp), g0p . gp)
+// which is about +90 deg at the +90 deg capture. The rotator reaches the IMU zero by moving -roll.
+// The sign does not depend on how the board is mounted (Triton: upside down), on the accelerometer
+// sign convention, or on the elevation of the optical axis during :95 (the earlier n = g0 x g90 was
+// exact only with the axis horizontal: 14 deg off at 10 deg elevation).
 #include <math.h>
 
 #include "imu_math.h"
@@ -46,26 +39,47 @@ static int16_t toI16(float v) {
     return (int16_t)lroundf(v);
 }
 
-FwError imuMathCalibrate(const ImuV3& g0, const ImuV3& g90, ImuCalibration& out) {
-    const float l0 = norm(g0), l90 = norm(g90);
-    if (l0 < IMU_CAL_G_MIN_MG || l0 > IMU_CAL_G_MAX_MG || l90 < IMU_CAL_G_MIN_MG || l90 > IMU_CAL_G_MAX_MG)
-        return FW_ERR_CALIB_FAILED;
+// Signed angle from a to b about the unit vector n, both projected onto the plane normal to n.
+static float angleAbout(const ImuV3& n, const ImuV3& a, const ImuV3& b) {
+    const float an = dot(a, n), bn = dot(b, n);
+    const ImuV3 ap{ a.x - an * n.x, a.y - an * n.y, a.z - an * n.z };
+    const ImuV3 bp{ b.x - bn * n.x, b.y - bn * n.y, b.z - bn * n.z };
+    return atan2f(dot(n, cross(ap, bp)), dot(ap, bp));
+}
 
-    // Optical axis near vertical: turning the camera hardly moves gravity in chip axes.
-    const float c = dot(g0, g90) / (l0 * l90);
-    if (c >= IMU_CAL_COS_VERTICAL) return FW_ERR_IMU_VERTICAL;
-    if (fabsf(c) > IMU_CAL_COS_MAX) return FW_ERR_CALIB_FAILED;   // rotator slipped / IMU moved
+static bool oneG(const ImuV3& v) {
+    const float l = norm(v);
+    return l >= IMU_CAL_G_MIN_MG && l <= IMU_CAL_G_MAX_MG;
+}
 
-    ImuV3 n = cross(g0, g90);
-    const float ln = norm(n);
+FwError imuMathCalibrate(const ImuV3& g0, const ImuV3& g90, const ImuV3& g180, ImuCalibration& out) {
+    if (!oneG(g0) || !oneG(g90) || !oneG(g180)) return FW_ERR_CALIB_FAILED;
+
+    const ImuV3 d1{ g90.x - g0.x, g90.y - g0.y, g90.z - g0.z };
+    const ImuV3 d2{ g180.x - g90.x, g180.y - g90.y, g180.z - g90.z };
+    // Radius of the gravity circle from the two 90 deg chords (chord = r * sqrt 2). A small circle
+    // means gravity is nearly along the axis: optical axis near vertical, roll undefined.
+    const float r = (norm(d1) + norm(d2)) * 0.5f * 0.70710678f;
+    if (r < IMU_VERTICAL_SIN * norm(g0)) return FW_ERR_IMU_VERTICAL;
+
+    const ImuV3 nr = cross(d1, d2);
+    const float ln = norm(nr);
     if (ln <= 0.0f) return FW_ERR_CALIB_FAILED;
+    const ImuV3 n{ nr.x / ln, nr.y / ln, nr.z / ln };
+    if (fabsf(dot(n, g0)) / norm(g0) >= IMU_VERTICAL_COS) return FW_ERR_IMU_VERTICAL;
+
+    // Both steps must be about +90 deg about n (rotator slipped, IMU moved, wrong direction).
+    const float lo = acosf(IMU_CAL_COS_MAX), hi = 3.14159265f - lo;   // 70 .. 110 deg
+    const float s1 = angleAbout(n, g0, g90), s2 = angleAbout(n, g90, g180);
+    if (s1 < lo || s1 > hi || s2 < lo || s2 > hi) return FW_ERR_CALIB_FAILED;
+
     out.valid = 1;
     out.g0[0] = toI16(g0.x);
     out.g0[1] = toI16(g0.y);
     out.g0[2] = toI16(g0.z);
-    out.n[0] = toI16(n.x / ln * 10000.0f);
-    out.n[1] = toI16(n.y / ln * 10000.0f);
-    out.n[2] = toI16(n.z / ln * 10000.0f);
+    out.n[0] = toI16(n.x * 10000.0f);
+    out.n[1] = toI16(n.y * 10000.0f);
+    out.n[2] = toI16(n.z * 10000.0f);
     return FW_OK;
 }
 
