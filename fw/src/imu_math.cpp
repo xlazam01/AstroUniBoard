@@ -32,6 +32,8 @@ static ImuV3 calN(const ImuCalibration& c) {
     return n;
 }
 static ImuV3 calG0(const ImuCalibration& c) { return ImuV3{ (float)c.g0[0], (float)c.g0[1], (float)c.g0[2] }; }
+static ImuV3 calC(const ImuCalibration& c) { return ImuV3{ (float)c.c[0], (float)c.c[1], (float)c.c[2] }; }
+static ImuV3 sub3(const ImuV3& a, const ImuV3& b) { return ImuV3{ a.x - b.x, a.y - b.y, a.z - b.z }; }
 
 static int16_t toI16(float v) {
     if (v > 32767.0f) return 32767;
@@ -68,9 +70,21 @@ FwError imuMathCalibrate(const ImuV3& g0, const ImuV3& g90, const ImuV3& g180, I
     const ImuV3 n{ nr.x / ln, nr.y / ln, nr.z / ln };
     if (fabsf(dot(n, g0)) / norm(g0) >= IMU_VERTICAL_COS) return FW_ERR_IMU_VERTICAL;
 
-    // Both steps must be about +90 deg about n (rotator slipped, IMU moved, wrong direction).
+    // Circle centre = circumcentre of the three points; keep its part in the plane normal to n
+    // (the part along n cannot be told apart from the elevation and does not matter for roll).
+    const ImuV3 e = sub3(g180, g0), w = cross(d1, e);
+    const float ww = dot(w, w);
+    if (ww <= 0.0f) return FW_ERR_CALIB_FAILED;
+    const ImuV3 t1 = cross(e, w), t2 = cross(w, d1);
+    const float k1 = dot(d1, d1) / (2.0f * ww), k2 = dot(e, e) / (2.0f * ww);
+    const ImuV3 ctr{ g0.x + k1 * t1.x + k2 * t2.x, g0.y + k1 * t1.y + k2 * t2.y, g0.z + k1 * t1.z + k2 * t2.z };
+    const float cn = dot(ctr, n);
+    const ImuV3 cp{ ctr.x - cn * n.x, ctr.y - cn * n.y, ctr.z - cn * n.z };
+    if (norm(cp) > IMU_CAL_OFFSET_MAX_MG) return FW_ERR_CALIB_FAILED;
+
+    // Both steps must be about +90 deg about n, seen from the centre (rotator slipped, IMU moved).
     const float lo = acosf(IMU_CAL_COS_MAX), hi = 3.14159265f - lo;   // 70 .. 110 deg
-    const float s1 = angleAbout(n, g0, g90), s2 = angleAbout(n, g90, g180);
+    const float s1 = angleAbout(n, sub3(g0, cp), sub3(g90, cp)), s2 = angleAbout(n, sub3(g90, cp), sub3(g180, cp));
     if (s1 < lo || s1 > hi || s2 < lo || s2 > hi) return FW_ERR_CALIB_FAILED;
 
     out.valid = 1;
@@ -80,6 +94,9 @@ FwError imuMathCalibrate(const ImuV3& g0, const ImuV3& g90, const ImuV3& g180, I
     out.n[0] = toI16(n.x * 10000.0f);
     out.n[1] = toI16(n.y * 10000.0f);
     out.n[2] = toI16(n.z * 10000.0f);
+    out.c[0] = toI16(cp.x);
+    out.c[1] = toI16(cp.y);
+    out.c[2] = toI16(cp.z);
     return FW_OK;
 }
 
@@ -87,19 +104,22 @@ bool imuMathCalValid(const ImuCalibration& c) {
     if (c.valid != 1) return false;
     const ImuV3 n{ (float)c.n[0], (float)c.n[1], (float)c.n[2] };
     const float ln = norm(n), lg = norm(calG0(c));
-    return ln >= 9000.0f && ln <= 11000.0f && lg >= IMU_CAL_G_MIN_MG && lg <= IMU_CAL_G_MAX_MG;
+    return ln >= 9000.0f && ln <= 11000.0f && lg >= IMU_CAL_G_MIN_MG && lg <= IMU_CAL_G_MAX_MG &&
+           norm(calC(c)) <= IMU_CAL_OFFSET_MAX_MG;
 }
 
-bool imuMathNearVertical(const ImuCalibration& c, const ImuV3& g) {
+bool imuMathNearVertical(const ImuCalibration& c, const ImuV3& graw) {
+    const ImuV3 g = sub3(graw, calC(c));
     const float lg = norm(g);
     if (lg <= 0.0f) return true;
     return fabsf(dot(calN(c), g)) / lg >= IMU_VERTICAL_COS;
 }
 
-int32_t imuMathRollCdeg(const ImuCalibration& c, const ImuV3& g) {
-    if (imuMathNearVertical(c, g)) return IMU_MATH_INVALID;
+int32_t imuMathRollCdeg(const ImuCalibration& c, const ImuV3& graw) {
+    if (imuMathNearVertical(c, graw)) return IMU_MATH_INVALID;
     const ImuV3 n = calN(c);
-    const ImuV3 g0 = calG0(c);
+    const ImuV3 g0 = sub3(calG0(c), calC(c));     // both measured from the circle centre
+    const ImuV3 g = sub3(graw, calC(c));
     const float a0 = dot(g0, n), a = dot(g, n);
     const ImuV3 g0p{ g0.x - a0 * n.x, g0.y - a0 * n.y, g0.z - a0 * n.z };
     const ImuV3 gp{ g.x - a * n.x, g.y - a * n.y, g.z - a * n.z };
@@ -111,7 +131,8 @@ int32_t imuMathRollCdeg(const ImuCalibration& c, const ImuV3& g) {
     return r;
 }
 
-int32_t imuMathTiltCdeg(const ImuCalibration& c, const ImuV3& g) {
+int32_t imuMathTiltCdeg(const ImuCalibration& c, const ImuV3& graw) {
+    const ImuV3 g = sub3(graw, calC(c));
     const ImuV3 n = calN(c);
     if (norm(g) <= 0.0f) return IMU_MATH_INVALID;
     const float t = atan2f(norm(cross(n, g)), dot(n, g));   // 0..pi

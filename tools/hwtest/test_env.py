@@ -55,7 +55,7 @@ def test_selection_roundtrip(restore_settings):
 
 def test_imu_calibration_data(board):
     r = board.cmd(":96#")
-    m = re.fullmatch(rf"C,([01]),({NUM}),({NUM}),({NUM}),({NUM}),({NUM}),({NUM})#", r)
+    m = re.fullmatch(rf"C,([01]),({NUM}),({NUM}),({NUM}),({NUM}),({NUM}),({NUM}),({NUM}),({NUM}),({NUM})#", r)
     assert m, r
     flags = board.status()["flags"]
     if not flags & 0x100:    # safe mode always reports "not calibrated"
