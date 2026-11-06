@@ -71,7 +71,7 @@ This file is only an index; edit issues on GitHub. Plan: [V2_PLAN.md](V2_PLAN.md
 - [#45](https://github.com/xlazam01/AstroUniBoard/issues/45) Standalone control & debug app
 - [#46](https://github.com/xlazam01/AstroUniBoard/issues/46) Installer (Inno Setup)
 - [#47](https://github.com/xlazam01/AstroUniBoard/issues/47) ConformU clean for Focuser, Rotator, ObservingConditions
-- [#48](https://github.com/xlazam01/AstroUniBoard/issues/48) ASCOM field test in NINA on astrobox
+- [#48](https://github.com/xlazam01/AstroUniBoard/issues/48) ASCOM field test in NINA on the observatory PC
 
 ## M8 INDI
 - [#49](https://github.com/xlazam01/AstroUniBoard/issues/49) indi_astrouniboard: one device, FOCUSER | ROTATOR | WEATHER interfaces
