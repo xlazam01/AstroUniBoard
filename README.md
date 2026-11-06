@@ -15,6 +15,9 @@ AstroUniBoard/
 └── docs/
     ├── HARDWARE.md         # Pin assignments and hardware overview
     ├── FIRMWARE.md         # Build and upload guide
+    ├── PROTOCOL.md         # V2 serial protocol (OpenWheel family)
+    ├── USB_IDS.md          # USB VID/PID (pid.codes) and DFU IDs
+    ├── V2_PLAN.md          # V2 plan and decisions
     └── USE_CASES.md        # Other possible applications + rev 3 ideas
 ```
 
@@ -72,6 +75,9 @@ Based on **OnStepX** — advanced telescope controller firmware with LX200 proto
 See [docs/FIRMWARE.md](docs/FIRMWARE.md) for full build and upload instructions.
 
 ## Serial Commands
+
+Firmware V2 (`fw/`) uses its own protocol: [docs/PROTOCOL.md](docs/PROTOCOL.md), USB IDs in
+[docs/USB_IDS.md](docs/USB_IDS.md). The commands below are for V1 (`fw-onstepx/`).
 
 | Command | Action |
 |---------|--------|
