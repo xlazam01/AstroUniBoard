@@ -6,6 +6,7 @@
 #include "config.h"
 #include "diag.h"
 #include "env_sht31.h"
+#include "i2c_bus.h"
 #include "settings.h"
 
 static const uint32_t ENV_PERIOD_MS     = 2000;  // measurement interval
@@ -48,8 +49,7 @@ static bool startMeasurement(uint8_t addr) {
     // to a present one never completes and starves the main loop (found on the board 2026-11-06,
     // on-board U8 not fitted). Restarting the peripheral after every failed transfer fixes it.
     diagNoteOr((uint32_t)err << (addr == SHT31_ADDR_ONBOARD ? 16 : 20));
-    Wire.end();
-    Wire.begin();
+    i2cRestart();
     return false;
 }
 
@@ -58,8 +58,7 @@ static void readMeasurement(EnvSensor s) {
     uint8_t buf[6];
     if (Wire.requestFrom(ADDRS[s], (uint8_t)6) != 6) {
         r.status = SHT_NO_ACK;
-        Wire.end();     // same STM32duino Wire workaround as in startMeasurement()
-        Wire.begin();
+        i2cRestart();   // same STM32duino Wire workaround as in startMeasurement()
         return;
     }
     for (uint8_t i = 0; i < 6; i++) buf[i] = (uint8_t)Wire.read();

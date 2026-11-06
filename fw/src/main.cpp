@@ -10,6 +10,7 @@
 #include "env_sht31.h"
 #include "focuser.h"
 #include "housekeeping.h"
+#include "i2c_bus.h"
 #include "imu_mpu6000.h"
 #include "leds.h"
 #include "nv_store.h"
@@ -44,10 +45,7 @@ void setup() {
 
     if (!safeMode) {
         diagMark(DIAG_WIRE_BEGIN);
-        Wire.setSDA(PIN_I2C_SDA);
-        Wire.setSCL(PIN_I2C_SCL);
-        Wire.begin();
-        Wire.setClock(400000);          // 24AA64, SHT31 and MPU-6000 all support fast mode
+        i2cBegin();                     // 400 kHz, kept across bus restarts (i2c_bus.h)
         diagMark(DIAG_NV_BEGIN);
         nvBegin();                      // loads `settings` (defaults when missing or bad)
         diagMark(DIAG_IMU_BEGIN);

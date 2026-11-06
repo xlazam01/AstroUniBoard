@@ -47,3 +47,10 @@ def test_parameter_separators(board):
     assert board.cmd(":47 F#") == a
     assert board.cmd(":47,F#") == a
     assert board.cmd(":47,f#") == a
+
+
+@pytest.mark.parametrize("text", [":41,,F#", ":42,F,,4#", ":51,,5#", ":72,1,,2#", ":93,,1#",
+                                  ":48,F,1,2,3,4,5,6,7#"])
+def test_malformed_arguments_are_bad_parameter(board, text):
+    """An empty value or too many values is a bad parameter (ERR,7) in every block."""
+    assert board.cmd(text) == "ERR,7#"

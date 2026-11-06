@@ -199,3 +199,26 @@ def test_save_and_reboot_persistence(board):
         board.ok(f":44,{orig}#")
         board.ok(":23#")
     assert board.int(":43#") == orig
+
+
+@pytest.mark.eeprom
+def test_unsaved_microstep_change_is_undone_at_boot(board, idle):
+    """:48 rescales the focuser position; a reboot without :23# loads the old microsteps and must
+    scale the saved position back (the record carries its microstep setting)."""
+    orig = board.driver("F")
+    other = 16 if orig[2] != 16 else 8
+    try:
+        board.ok(":23#")                         # saved settings = running settings
+        board.ok(":56,1000#")                    # sync: verified position, saved at once
+        board.set_driver("F", (orig[0], orig[1], other, orig[3], orig[4]))
+        assert board.int(":50#") == 1000 * other // orig[2]
+        time.sleep(0.5)                          # the rescaled position is saved on the next loop pass
+        board.ok(":22#")
+        time.sleep(1.0)
+        board.reconnect()
+        assert board.driver("F") == orig, "saved microsteps expected after the reboot"
+        assert board.int(":50#") == 1000, "position must be scaled back to the saved microsteps"
+        assert board.status()["flags"] & 0x1 == 0, "synced position must stay verified across a reboot"
+    finally:
+        board.wait_idle()
+        board.set_driver("F", orig)

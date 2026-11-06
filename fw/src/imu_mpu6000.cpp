@@ -13,6 +13,7 @@
 #include <Wire.h>
 
 #include "config.h"
+#include "i2c_bus.h"
 #include "imu_math.h"
 #include "imu_mpu6000.h"
 
@@ -54,11 +55,8 @@ static bool     cap0Ok, cap90Ok;
 static ImuV3    cap0, cap90;
 
 // STM32duino Wire (G0): after a failed transfer the next one can hang; restart the peripheral
-// (same workaround as env_sht31.cpp, found on the board 2026-11-06).
-static void busRestart() {
-    Wire.end();
-    Wire.begin();
-}
+// (found on the board 2026-11-06, see i2c_bus.h).
+static void busRestart() { i2cRestart(); }
 
 static bool writeReg(uint8_t reg, uint8_t value) {
     Wire.beginTransmission(MPU6000_ADDR);

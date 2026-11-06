@@ -55,6 +55,9 @@
 #define SLOT_ROT_MOVING    0x02
 #define SLOT_FOC_SAVED     0x04   // a focuser position was saved at least once
 #define SLOT_ROT_SAVED     0x08
+#define SLOT_FOC_UNVERIFIED 0x10  // saved as a best estimate (stall, never synced): unverified at boot
+// PosSlot.reserved holds log2(focuser microsteps) + 1 at the time of the write (0 = unknown, older
+// slots), so a microstep change that was not saved with :23# can be undone at boot.
 
 struct __attribute__((packed)) NvHeader {
     uint16_t magic;
@@ -252,7 +255,7 @@ static void scanRing() {
         }
         for (uint8_t k = 0; k < NV_READ_CHUNK / NV_SLOT_SIZE; k++) {
             const PosSlot& s = page[k];
-            if ((s.flags & 0xF0) || s.reserved != 0 || s.crc != slotCrc(s)) continue;   // blank = 0xFF
+            if ((s.flags & 0xE0) || s.reserved > 9 || s.crc != slotCrc(s)) continue;   // blank = 0xFF
             if (!found || (int32_t)(s.seq - best.seq) > 0) { best = s; newest = i + k; found = true; }
         }
     }
@@ -262,8 +265,15 @@ static void scanRing() {
     }
 }
 
+static uint8_t ustepsCode(uint16_t usteps) {
+    uint8_t c = 1;
+    while (usteps > 1 && c < 9) { usteps >>= 1; c++; }
+    return c;
+}
+
 static void queuePosition() {
     pos.seq++;
+    pos.reserved = ustepsCode(settings.drv[AXIS_FOC].microsteps);
     posPending = true;
     nvUpdate();   // writes at once unless the chip is still busy
 }
@@ -305,8 +315,9 @@ FwError nvSaveSettings() {
 }
 
 void nvLoadPositions(SavedPositions& out) {
-    out.focValid = (pos.flags & SLOT_FOC_SAVED) && !(pos.flags & SLOT_FOC_MOVING);
+    out.focValid = (pos.flags & SLOT_FOC_SAVED) && !(pos.flags & (SLOT_FOC_MOVING | SLOT_FOC_UNVERIFIED));
     out.focPos   = pos.focPos;
+    out.focUsteps = pos.reserved ? (uint16_t)(1u << (pos.reserved - 1)) : 0;
     out.rotValid = (pos.flags & SLOT_ROT_SAVED) && !(pos.flags & SLOT_ROT_MOVING);
     out.rotCdeg  = pos.rotCdeg;
 }
@@ -318,10 +329,12 @@ void nvMarkMoving(AxisId axis) {
     queuePosition();
 }
 
-void nvSavePosition(AxisId axis, int32_t value) {
+void nvSavePosition(AxisId axis, int32_t value, bool verified) {
     if (axis == AXIS_FOC) {
-        const uint8_t f = (uint8_t)((pos.flags & ~SLOT_FOC_MOVING) | SLOT_FOC_SAVED);
-        if (f == pos.flags && value == pos.focPos) return;
+        uint8_t f = (uint8_t)((pos.flags & ~(SLOT_FOC_MOVING | SLOT_FOC_UNVERIFIED)) | SLOT_FOC_SAVED);
+        if (!verified) f |= SLOT_FOC_UNVERIFIED;
+        if (f == pos.flags && value == pos.focPos &&
+            pos.reserved == ustepsCode(settings.drv[AXIS_FOC].microsteps)) return;
         pos.flags = f;
         pos.focPos = value;
     } else {

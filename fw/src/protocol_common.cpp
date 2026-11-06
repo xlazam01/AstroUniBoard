@@ -99,7 +99,7 @@ static void cmdSetDriver(const ProtoArgs& a) {
 
 void protocolCommon(uint8_t cmd, char* params) {
     ProtoArgs a;
-    if (!protoSplit(params, a)) { protoError(FW_ERR_BAD_FORMAT); return; }
+    if (!protoSplit(params, a)) { protoError(FW_ERR_BAD_PARAM); return; }
 
     switch (cmd) {
         case 22:  // reboot

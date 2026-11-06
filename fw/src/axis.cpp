@@ -122,6 +122,9 @@ void Axis::update() {
     if (wasBusy && !b) stopMs = now;
     wasBusy = b;
     if (!b && enabled && idleOffS && now - stopMs >= (uint32_t)idleOffS * 1000UL) enableDriver(false);
+    // idle_off 0 = "stays powered at hold current": also from power-on (holds the camera angle
+    // before the first move) and right after idle_off is set to 0.
+    if (!b && !enabled && idleOffS == 0) enableDriver(true);
 }
 
 int32_t Axis::position() const { return pos; }
