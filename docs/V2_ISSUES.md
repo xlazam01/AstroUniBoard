@@ -27,7 +27,7 @@ This file is only an index; edit issues on GitHub. Plan: [V2_PLAN.md](V2_PLAN.md
 - [#16](https://github.com/xlazam01/AstroUniBoard/issues/16) Protocol parser + dispatch: ping, identify, status, error
 - [#17](https://github.com/xlazam01/AstroUniBoard/issues/17) NV store on 24AA64: records with magic + CRC, migration, wear policy
 - [#18](https://github.com/xlazam01/AstroUniBoard/issues/18) Housekeeping: VDDA, +5V, die temp, TMC temp (+12 V if Q24)
-- [#19](https://github.com/xlazam01/AstroUniBoard/issues/19) DFU jump :31# and reboot :22#; update tools/firmware_manager
+- [#19](https://github.com/xlazam01/AstroUniBoard/issues/19) DFU :31# via magic word in TAMP backup register + reset, and reboot :22#; update tools/firmware_manager
 - [#20](https://github.com/xlazam01/AstroUniBoard/issues/20) Status/activity LEDs
 - [#21](https://github.com/xlazam01/AstroUniBoard/issues/21) tools/hwtest pytest skeleton against the real board
 - [#22](https://github.com/xlazam01/AstroUniBoard/issues/22) Self-hosted HIL runner on the dev PC

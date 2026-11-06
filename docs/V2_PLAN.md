@@ -1,7 +1,8 @@
 # AstroUniBoard Firmware V2 — Plan (DRAFT 0.1, 2026-11-05)
 
 Status: **draft for discussion.** Decisions marked **[Qnn]** are open — see section 9.
-Nothing here is implemented. V1 (OnStepX port) stays usable until V2 reaches feature parity.
+Implemented so far (2026-11-06, tested on rev 1): `fw/` skeleton, USB 1209:0001, `:22#` `:25#` `:31#`,
+watchdog safe mode, SHT31 readout (temporary `:90#`), bring-up diagnostics (temporary `:99#`). V1 (OnStepX port) stays usable until V2 reaches feature parity.
 
 ## 1. Goals
 
@@ -27,7 +28,7 @@ Non-goals (V2.0): mount control, LX200 compatibility, Alpaca server on the devic
 
 | From | What | How |
 |---|---|---|
-| OpenWheel `fw/` | protocol parser, error codes, identify/status, housekeeping (VDDA, +5V, die temp, TMC temp), EEPROM record with magic+CRC, DFU jump, LED PWM, TMC2209 init + StallGuard, USB descriptor flags | copy → adapt, or extract to a shared lib **[Q04]** |
+| OpenWheel `fw/` | protocol parser, error codes, identify/status, housekeeping (VDDA, +5V, die temp, TMC temp), EEPROM record with magic+CRC, DFU entry via magic word + reset (idea from OpenWheel `docs/BOOTLOADER.md`; implemented here with a TAMP backup register, see §4 `:31#`), LED PWM, TMC2209 init + StallGuard, USB descriptor flags | copy → adapt, or extract to a shared lib **[Q04]** |
 | OpenWheel `driver/ASCOM` | `OpenWheel.Core` (worker thread, framing, circuit breaker, detection by VID/PID + identify, fake device tests), LocalServer, Inno Setup installer, ConformU workflow | same split: `AstroUniBoard.Core` + thin ASCOM layer |
 | OpenWheel `driver/INDI` | serial_link, detect, protocol, simulator, tests, docker build | same split |
 | V1 (this repo) | pinmap (`docs/HARDWARE.md`), MPU-6000 gravity homing idea (commit f313306), rotator angle convention + cable-wrap rules (`fw-onstepx/TESTPLAN_RotatorHoming.md`), `firmware_manager` MCP | rewrite (OnStepX code is GPL-3 and must not be copied verbatim if the license changes **[Q05]**) |
@@ -73,7 +74,7 @@ Common block — **same numbers and replies as OpenWheel** so `*.Core` libraries
 | 23 | write settings to EEPROM | same |
 | 25 | ping | same |
 | 30 | halt | halt **all** axes |
-| 31 | DFU | same |
+| 31 | DFU | same command, different mechanism: magic word in `TAMP->BKP0R` (survives a system reset, no RAM reservation or linker change) + `NVIC_SystemReset()`; `dfuCheckAtBoot()` runs first in `SystemClock_Config()` (after `HAL_Init`, before clocks/USB) and jumps to the system bootloader at 0x1FFF0000. One-shot: the word is cleared before the jump. Implemented in `fw/src/bootloader.cpp`, tested on rev 1 (DFU round trip, reflash without BOOT0) |
 | 32 | identify | `ASTROUNIBOARD,<model>,<fw>,<proto>,<serial>,<caps>#` (caps = bitmask focuser/rotator/imu/env) **[Q09]** |
 | 33 | status | `S,<state>,<foc_pos>,<foc_moving>,<rot_mech_cdeg>,<rot_moving>,<err>,<flags>#` — one atomic line |
 | 34 | read / clear sticky error | same |
@@ -84,6 +85,10 @@ Common block — **same numbers and replies as OpenWheel** so `*.Core` libraries
 Device block (draft numbering): focuser 50–69 (pos, move abs/rel, max, speed, backlash, temp-comp
 coeff, reverse, current, halt-axis…), rotator 70–89 (mech angle, move, reverse, steps/deg, home via
 IMU, set home, wrap limits…), env/IMU 90–99 (temp, RH, dew point, raw gravity vector, IMU cal).
+
+Bring-up placeholders in the firmware: `:90#` (both SHT31 sensors) and `:99#` (reset flags, last
+progress marker). They sit in the env/IMU range and get replaced or renumbered when that block is
+specified (#10); `:99#` is removed or moved to a debug number before the pid.codes gate.
 
 Units: focuser in steps (int32), rotator in centidegrees (int), temperature in 0.1 °C.
 Every move answers `OK#` when started; completion is polled with `:33#` (OpenWheel rule).
