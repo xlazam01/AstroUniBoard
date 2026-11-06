@@ -12,7 +12,7 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2, ASCOM driver 0.1.0 (pre-release, ConformU clean). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
+| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2, ASCOM driver 0.2.0 (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
 | Sensors | SHT31 temperature/humidity on board (+ optional external SHT31), MPU-6000 accelerometer for camera roll |
@@ -29,6 +29,7 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 ## Contents
 
 - [What is on the board and why](#what-is-on-the-board-and-why)
+- [Other applications](#other-applications)
 - [Alternatives considered](#alternatives-considered)
 - [Connectors and jumpers](#connectors-and-jumpers)
 - [Bill of materials](#bill-of-materials)
@@ -44,12 +45,11 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 
 | Feature | Part | Why it is there |
 |---|---|---|
-| **Focuser channel** | TMC2209 U3, 0.11 Ω sense | Main job: a stepper focuser. Version 1 targets the **guide-camera focuser** behind an OAG, which N.I.N.A. cannot focus on its own (see the [Secondary Focuser plugin](https://github.com/xlazam01/SecondaryFocuser-NINA)). StealthChop keeps it silent and avoids vibration during exposures. StallGuard can stop a move against a hard stop |
-| **Rotator channel** | TMC2209 U2 | Camera rotator. The firmware keeps the mechanical angle and never crosses the cable-wrap limits (default ±180°, configurable). The sky offset stays with the host |
+| **Two identical motor channels: focuser and rotator** | 2 × TMC2209 (U3 focuser, U2 rotator), same parts and 0.11 Ω sense on both | The same driver circuit twice, so either channel can take either job, and one BOM line covers both. **Focuser:** version 1 targets the **guide-camera focuser** behind an OAG, which N.I.N.A. cannot focus on its own (see the [Secondary Focuser plugin](https://github.com/xlazam01/SecondaryFocuser-NINA)); StallGuard can stop a move against a hard stop. **Rotator:** the firmware keeps the mechanical angle and never crosses the cable-wrap limits (default ±180°, configurable); the sky offset stays with the host. StealthChop keeps both silent and avoids vibration during exposures |
 | **One UART for both drivers** | USART2, addresses 0 / 1 | Run current, hold current, microsteps and mode can be set at runtime and saved, with no pots to adjust. Driver faults, overtemperature and StallGuard are visible to the host |
 | **Camera roll sensor** | MPU-6000 U10 (I²C, 0x68) | The board rotates with the camera, so the accelerometer measures camera roll against gravity. That gives **IMU homing**: the rotator finds its zero without a switch, flag or Hall sensor. Calibrate once (three captures, any mounting orientation, also upside down) |
 | **Temperature / humidity** | SHT31 U8 (0x45) | For temperature compensation of focus (done on the host) and for dew point (ASCOM ObservingConditions). It is on the board because the board sits on the optical train |
-| **Switched sensor supply** | PB9 → R32 → SHT31 VDD and ADDR | The firmware can power-cycle a stuck sensor. Tying ADDR to the same pin moves the on-board sensor to 0x45, so an **external SHT31 on J9** (0x44) fits on the same bus, for example on the dew shield |
+| **Switched sensor supply** | PB9 → R32 → SHT31 VDD and ADDR | **Less self-heating:** the SHT31 sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (Firmware 2.0.0 still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) Tying ADDR to the same pin moves the on-board sensor to 0x45, so an **external SHT31 on J9** (0x44) fits on the same bus, for example on the dew shield |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
 | **Power path** | XT30 J6 → F1 2 A polyfuse → D24 SMF15A TVS (rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. F1 trips on a short or overload behind it and resets when cooled. There is no reverse-polarity FET: a reversed supply drives D24 forward until F1 trips, which may cost D24. Rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
@@ -58,9 +58,26 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **Status LEDs** | D1 status (PB12), D2 activity (PB4), D3 = 12 V present, D4 = 5 V present | You can see power, motion and errors without a PC. The brightness is adjustable and the LEDs are dim, because the board sits next to a camera |
 | **Buttons** | RST, LEFT (= BOOT0), RIGHT | RST and BOOT0 are for recovery. LEFT/RIGHT are not used by the firmware: in the Triton enclosure the board is mounted upside down and out of reach |
 | **Spare I/O** | J4 Hall/index, J8 AUX1/AUX2, J9 I²C, J10 UART6 — all DNP | For other uses of the board (filter wheel index, dew heater MOSFET, GPS, SQM). See [docs/USE_CASES.md](docs/USE_CASES.md) |
-| **Mounting** | 4 × M2 (29 × 29 mm) and 4 × M3 (26 × 26 mm), overlapping keyholes | Fits both standoff patterns used in the rig enclosures |
+| **Mounting** | 4 × M2 (29 × 29 mm) and 4 × M3 (26 × 26 mm), overlapping keyholes | Fits both standoff patterns used in the rig enclosures. The 26 × 26 mm M3 pattern is the **NEMA 14 hole pattern**, so the board also screws straight onto the back of a NEMA 14 stepper: ideal for a focuser motor or a small mount axis, with no bracket and the shortest possible motor cable |
 
 Pin map and electrical details: [docs/HARDWARE.md](docs/HARDWARE.md).
+
+## Other applications
+
+The board is a general two-stepper controller with an IMU, a temperature/humidity sensor and a USB hub. Besides the
+focuser + rotator it was designed for, these uses came up (details in [docs/USE_CASES.md](docs/USE_CASES.md)):
+
+| Use | What it takes |
+|---|---|
+| **Dual focuser** (main + guide scope, or OAG guide camera) | Firmware only: both channels as focusers |
+| **Filter wheel** | Firmware only: one channel drives the wheel, J4 Hall input as the index |
+| **Motorised dust cap / flat panel** | Firmware only for the cap; the panel dimming needs PWM on AUX (J8) |
+| **Small mount or star tracker** (barn door, camera-lens mount) | Both channels as RA/Dec, board mounted straight on a NEMA 14; the IMU helps with levelling. OnStepX-based, needs more flash (G0B1CC/CE) |
+| **Telescope cover, roof or small dome shutter** | Light loads only (TMC2209, about 2 A peak) |
+| **Mount / observatory monitor** | IMU for vibration, wind shake and "scope bumped" alarms; SHT31 for dew-point alerts |
+| **Dew heater control** | PWM on AUX1/AUX2 to an external MOSFET, closed loop on the dew point |
+| **GPS, sky quality meter, cloud sensor** | GPS on UART6 (J10); TSL2591 or MLX90614 on I²C (J9), as an ASCOM SafetyMonitor / ObservingConditions |
+| **Non-astro** | Camera slider or pan/tilt for timelapse, microscope focus stacking, 3D-scan turntable, syringe pump or slow linear stage |
 
 ## Alternatives considered
 
@@ -283,7 +300,7 @@ button sequence is the recovery path, and in the Triton enclosure the board has 
 
 - **ASCOM** (Windows, Platform 7): one LocalServer with Focuser, Rotator and ObservingConditions, so N.I.N.A. and the
   debug app can be connected at the same time. Installer:
-  [releases](https://github.com/xlazam01/AstroUniBoard/releases) (`driver-v0.1.0`, pre-release). Sources and
+  [releases](https://github.com/xlazam01/AstroUniBoard/releases) (`driver-v0.2.0`, pre-release). Sources and
   structure: [driver/ASCOM/README.md](driver/ASCOM/README.md), spec in [driver/ASCOM/SPEC.md](driver/ASCOM/SPEC.md).
 - **Control & debug app**: live status, jog, motor setup, IMU calibration, environment, raw console, log and firmware
   update. [README](driver/ASCOM/AstroUniBoard.DebugApp/README.md).

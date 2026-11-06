@@ -6,12 +6,16 @@ Focuser + rotator + weather controller for the Esprit 100ED imaging train: PCB r
 |---|---|
 | PCB | rev 2.1 (11/2026) |
 | Firmware | FW2.0.0, protocol 2 (identify first) |
-| Compatible ASCOM driver | 0.1.0 (`driver-v0.1.0`) |
+| Compatible ASCOM driver | 0.2.0 (`driver-v0.2.0`); 0.1.0 works but does not know the new errors |
 
 > **Not yet verified on a rev 2.1 board:** firmware 2.0.0 (built and simulator-tested only), and the 12 V
 > hot-plug transient with the new polyfuse + TVS (#71). Rev 2.0 boards use the `rev2.0` build.
 
 ## Files (GitHub release assets)
+
+- `AstroUniBoard-2.0.0-PCB-JLCPCB.zip`: **the PCB order package** — gerbers, BOM, CPL, schematic and
+  `ORDERING.txt` (the checks below) in one download. The same files are also attached one by one.
+- `AstroUniBoard-ASCOM-Setup-0.2.0.exe`: the ASCOM driver + debug app installer (same file as `driver-v0.2.0`).
 
 - `AstroUniBoard-FW2.0.0-rev2.1.bin` (PCB rev 2.1: reads the 12 V sense and refuses moves below 9 V) and
   `AstroUniBoard-FW2.0.0-rev2.0.bin` (PCB rev 2.0). Don't swap them: the rev 2.1 image on a rev 2.0 board refuses
@@ -19,8 +23,8 @@ Focuser + rotator + weather controller for the Esprit 100ED imaging train: PCB r
   **RST**. Copies are in this folder.
   - On a new board the rotator angle starts *unverified*: send `:76,0#` (sync) with the camera upright before the
     first rotator move, or moves answer `ERR,17`.
-  - Driver 0.1.0 predates the new firmware errors (`ERR,17`, and `ERR,8` for a reboot while moving): it shows them as
-    errors but doesn't handle them. The next driver release (#78, #79) does.
+  - Use driver 0.2.0: it explains `ERR,17` (how to sync) and refuses a reboot or DFU while an axis moves.
+    Driver 0.1.0 predates these errors and only shows them as errors.
 - `AstroUniBoard-gerbers.zip`, `AstroUniBoard-bom-jlc.csv`, `AstroUniBoard-cpl-jlc.csv`: JLCPCB fabrication and
   assembly. 42 BOM lines, all with LCSC numbers; DNP parts (J3, J4, J8, J9, J10) and the mounting holes are left out.
   - All SMD parts are on the top. The only bottom part is the XT30 **J6** (through-hole).
