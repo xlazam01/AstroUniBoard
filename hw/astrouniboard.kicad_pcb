@@ -3912,7 +3912,7 @@
 			)
 		)
 		(embedded_fonts no)
-		(model "${KICAD10_3DMODEL_DIR}/Sensor_Humidity.3dshapes/Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad.step"
+		(model "${KIPRJMOD}/3dmodels/Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x.step"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -7245,7 +7245,7 @@
 			)
 		)
 		(embedded_fonts no)
-		(model "${KICAD10_3DMODEL_DIR}/Sensor_Humidity.3dshapes/Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad.step"
+		(model "${KIPRJMOD}/3dmodels/Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x.step"
 			(offset
 				(xyz 0 0 0)
 			)
