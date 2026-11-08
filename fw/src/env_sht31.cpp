@@ -1,5 +1,6 @@
-// SHT3x / SHT4x driver. The on-board U8 (0x45) is always an SHT31; the external J9 sensor (0x44) may be an
-// SHT3x (SHT31 module) or an SHT4x (rev 2.1 snap-off tab: SHT40-AD1B) and is auto-detected.
+// SHT3x / SHT4x driver. Both sensors are auto-detected: on-board U8 (0x45) is an SHT31 on rev 2.0 and an
+// SHT40-BD1B on rev 2.1; the external J9 sensor (0x44) is an SHT31 module or the rev 2.1 snap-off tab
+// (SHT40-AD1B). Both U8 variants are powered from PB9 (SHT_PWR), so the power-cycle recovery covers either.
 // SHT3x-DIS datasheet: single shot 0x2400, high repeatability, no clock stretching.
 // SHT4x datasheet: one-byte commands, 0xFD measure high precision (8.3 ms max), 0x89 serial number.
 // Both answer with 6 bytes T(2)+CRC, RH(2)+CRC and use the same CRC-8.
@@ -24,8 +25,8 @@ static const uint8_t ADDRS[ENV_SENSOR_COUNT] = { SHT31_ADDR_ONBOARD, SHT31_ADDR_
 
 enum EnvState : uint8_t { ST_POWER_UP, ST_IDLE, ST_PROBING, ST_MEASURING, ST_POWER_OFF };
 
-// Sensor family. Unknown = the external sensor is probed before its next measurement: at boot, after a
-// supply power cycle and after every failed measurement (the sensor on J9 may have been swapped).
+// Sensor family. Unknown = the sensor is probed before its next measurement: at boot, after a supply
+// power cycle and after every failed measurement (the sensor on J9 may have been swapped).
 enum ShtFamily : uint8_t { FAM_UNKNOWN, FAM_SHT3X, FAM_SHT4X };
 
 static ShtReading readings[ENV_SENSOR_COUNT] = { { SHT_NO_DATA, 0, 0, 0 }, { SHT_NO_DATA, 0, 0, 0 } };
@@ -36,7 +37,8 @@ static uint32_t   lastStart;
 static bool       seen[ENV_SENSOR_COUNT];    // answered at least once since boot
 static uint8_t    fails[ENV_SENSOR_COUNT];   // consecutive failures after it was seen
 static uint16_t   powerCycles;
-static ShtFamily  family[ENV_SENSOR_COUNT] = { FAM_SHT3X, FAM_UNKNOWN };   // on-board U8 is always an SHT31
+static ShtFamily  family[ENV_SENSOR_COUNT];
+static bool       probing[ENV_SENSOR_COUNT];   // probe started in this cycle, answer still to be read
 
 static void enter(EnvState s) { state = s; stateSince = millis(); }
 
@@ -84,20 +86,20 @@ static bool startMeasurement(EnvSensor s) {
     return writeCommand(ADDRS[s], CMD_SHT3X, 2);
 }
 
-// External sensor probe, step 1: ask for the SHT4x serial number. An SHT3x takes the single byte as an
-// incomplete command and has no data to send, so it NACKs the read in step 2.
-static bool startProbe() {
+// Probe, step 1: ask for the SHT4x serial number. An SHT3x takes the single byte as an incomplete
+// command and has no data to send, so it NACKs the read in step 2.
+static bool startProbe(EnvSensor s) {
     static const uint8_t CMD_SERIAL[1] = { 0x89 };
-    return writeCommand(ADDRS[ENV_EXTERNAL], CMD_SERIAL, 1);
+    return writeCommand(ADDRS[s], CMD_SERIAL, 1);
 }
 
 // Step 2: 6 valid bytes = SHT4x, no answer = SHT3x. A CRC error leaves the family unknown (probe again).
-static void finishProbe() {
+static void finishProbe(EnvSensor s) {
     uint16_t w[2];
-    const ShtStatus st = readWords(ADDRS[ENV_EXTERNAL], w);
-    if (st == SHT_OK)          family[ENV_EXTERNAL] = FAM_SHT4X;
-    else if (st == SHT_NO_ACK) family[ENV_EXTERNAL] = FAM_SHT3X;
-    else                       readings[ENV_EXTERNAL].status = SHT_BAD_CRC;
+    const ShtStatus st = readWords(ADDRS[s], w);
+    if (st == SHT_OK)          family[s] = FAM_SHT4X;
+    else if (st == SHT_NO_ACK) family[s] = FAM_SHT3X;
+    else                       readings[s].status = SHT_BAD_CRC;
 }
 
 // Triggers a measurement on every sensor whose family is known. A sensor still unknown was not detected
@@ -131,8 +133,10 @@ static void readMeasurement(EnvSensor s) {
 }
 
 void envBegin() {
-    for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) readings[i] = { SHT_NO_DATA, 0, 0, 0 };
-    family[ENV_EXTERNAL] = FAM_UNKNOWN;
+    for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+        readings[i] = { SHT_NO_DATA, 0, 0, 0 };
+        family[i]   = FAM_UNKNOWN;
+    }
     pinMode(PIN_SHT_PWR, OUTPUT);
     digitalWrite(PIN_SHT_PWR, HIGH);
     lastStart = millis() - ENV_PERIOD_MS;   // measure as soon as the sensor is up
@@ -149,18 +153,30 @@ void envUpdate() {
         case ST_IDLE:
             if (now - lastStart < ENV_PERIOD_MS) break;
             lastStart = now;
-            if (family[ENV_EXTERNAL] == FAM_UNKNOWN) {
-                diagMark(DIAG_ENV_PROBE);
-                if (startProbe()) { enter(ST_PROBING); break; }
-                // no answer: nothing on J9, measure the on-board sensor only
+            {
+                bool any = false;
+                for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+                    // A sensor that does not answer the probe is absent: startAll() skips it this cycle.
+                    if (family[i] == FAM_UNKNOWN) {
+                        diagMark(DIAG_ENV_PROBE);
+                        probing[i] = startProbe((EnvSensor)i);
+                    } else {
+                        probing[i] = false;
+                    }
+                    any = any || probing[i];
+                }
+                if (any) { enter(ST_PROBING); break; }
             }
             startAll();
             break;
 
         case ST_PROBING:
             if (now - stateSince < PROBE_WAIT_MS) break;
-            diagMark(DIAG_ENV_PROBE);
-            finishProbe();
+            for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+                if (!probing[i]) continue;
+                diagMark(DIAG_ENV_PROBE);
+                finishProbe((EnvSensor)i);
+            }
             startAll();
             break;
 
@@ -177,9 +193,10 @@ void envUpdate() {
                 if (readings[i].status == SHT_OK) { seen[i] = true; fails[i] = 0; }
                 else if (seen[i] && ++fails[i] >= FAILS_BEFORE_CYCLE) hung = true;
             }
-            if (readings[ENV_EXTERNAL].status != SHT_OK) family[ENV_EXTERNAL] = FAM_UNKNOWN;   // re-detect
+            for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++)
+                if (readings[i].status != SHT_OK) family[i] = FAM_UNKNOWN;   // re-detect before the next try
             if (hung) {
-                for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) fails[i] = 0;
+                for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) { fails[i] = 0; family[i] = FAM_UNKNOWN; }
                 powerCycles++;
                 digitalWrite(PIN_SHT_PWR, LOW);
                 enter(ST_POWER_OFF);

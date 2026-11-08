@@ -168,7 +168,7 @@ S,1,12500,-1,9000,-1,0,30#
 | 1 | rotator angle unverified (not homed or synced since boot, Q20; set at every boot) |
 | 2 | EEPROM fault (missing, bad CRC → defaults in use) |
 | 3 | housekeeping warning (see `:40#`) |
-| 4 | on-board SHT31 has a valid reading |
+| 4 | on-board sensor (SHT31 on rev 2.0, SHT40 on rev 2.1) has a valid reading |
 | 5 | external sensor (J9, SHT3x or SHT4x) has a valid reading |
 | 6 | IMU answering |
 | 7 | IMU zero not calibrated |
@@ -463,10 +463,11 @@ use (ASCOM ObservingConditions, INDI WEATHER, host temperature compensation): `s
 external. Auto (default) prefers the external J9 sensor — the on-board one sits next to the motor
 drivers and reads warm. `:91` is the detailed view for the debug app: on-board group first, then
 external; `st` 0 valid, 1 no answer (absent, unpowered or bus fault), 2 CRC error, 3 no measurement yet since boot (`ShtStatus` in `fw/src/env_sht31.h`); values are the last good
-reading; `power_cycles` counts restarts of the sensor supply (PB9 `SHT_PWR`). The
-J9 sensor (I2C 0x44) may be an SHT3x or an SHT4x (rev 2.1 snap-off tab: SHT40); the firmware detects
-the family by itself (SHT4x serial number read, SHT3x when that gets no answer) and probes again after
-every failed reading, so a swapped sensor is picked up within one or two readings. The answers do not
+reading; `power_cycles` counts restarts of the sensor supply (PB9 `SHT_PWR`). Each sensor may be
+an SHT3x or an SHT4x: on-board (I2C 0x45) SHT31 on rev 2.0, SHT40 on rev 2.1; J9 (0x44) an SHT31
+module or the rev 2.1 SHT40 snap-off tab. The firmware detects the family of each by itself (SHT4x
+serial number read, SHT3x when that gets no answer) and probes again after every failed reading and
+every supply restart, so a swapped sensor is picked up within one or two readings. The answers do not
 change with the family. Readings are refreshed every
 2 s. No temperature compensation in the firmware (Q21).
 
