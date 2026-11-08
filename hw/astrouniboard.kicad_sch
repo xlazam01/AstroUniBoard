@@ -6,13 +6,185 @@
 	(paper "A2")
 	(title_block
 		(title "AstroUniBoard - focuser / rotator controller")
-		(date "2026-11-06")
-		(rev "2.1")
+		(date "2026-11-08")
+		(rev "2.2")
 		(company "AstroUniBoard")
-		(comment 1 "STM32G0B1 + 2x TMC2209, USB hub, IMU, SHT31")
+		(comment 1 "STM32G0B1 + 2x TMC2209, USB hub, IMU, SHT40 + snap-off SHT40 tab")
 		(comment 2 "Schematic reorganised 2026-11-05 (netlist unchanged)")
 	)
 	(lib_symbols
+		(symbol "Sensor_Humidity:SHT4x"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 8.89 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify right)
+				)
+			)
+			(property "Value" "SHT4x"
+				(at 0 6.35 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify right)
+				)
+			)
+			(property "Footprint" "Sensor_Humidity:Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad"
+				(at 3.81 -6.35 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Datasheet" "https://sensirion.com/media/documents/33FD6951/624C4357/Datasheet_SHT4x.pdf"
+				(at 3.81 -8.89 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Description" "Digital Humidity and Temperature Sensor, ±1%RH, ±0.1°C, I2C, 1.08-3.6V, 16bit, DFN-4"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "Sensirion environment environmental measurement digital SHT40 SHT41 SHT45"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "Sensirion?DFN*1.5x1.5mm*P0.8mm*SHT4x*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "SHT4x_1_1"
+				(rectangle
+					(start -5.08 5.08)
+					(end 5.08 -5.08)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin bidirectional line
+					(at -7.62 -2.54 0)
+					(length 2.54)
+					(name "SDA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -7.62 2.54 0)
+					(length 2.54)
+					(name "SCL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 2.54 7.62 270)
+					(length 2.54)
+					(name "VDD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 2.54 -7.62 90)
+					(length 2.54)
+					(name "VSS"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "AstroUniBoard:24AA64-OT"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -6932,267 +7104,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Sensor_Humidity:SHT31A-DIS"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at -6.35 6.35 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "SHT31A-DIS"
-				(at 6.35 6.35 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "Sensor_Humidity:Sensirion_DFN-8-1EP_2.5x2.5mm_P0.5mm_EP1.1x1.7mm"
-				(at 0 1.27 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" "https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/2_Humidity_Sensors/Datasheets/Sensirion_Humidity_Sensors_SHT3xA_Datasheet.pdf"
-				(at 0 1.27 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "I²C humidity and temperature sensor, ±2%RH, ±0.3°C, AEQ-100, DFN-8"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "digital temperature humidity automotive i2c"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_fp_filters" "Sensirion*DFN*1EP*2.5x2.5mm*P0.5mm*"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "SHT31A-DIS_0_1"
-				(rectangle
-					(start -7.62 5.08)
-					(end 7.62 -5.08)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "SHT31A-DIS_1_1"
-				(pin bidirectional line
-					(at 10.16 2.54 180)
-					(length 2.54)
-					(name "SDA"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -10.16 2.54 0)
-					(length 2.54)
-					(name "ADDR"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 10.16 -2.54 180)
-					(length 2.54)
-					(name "ALERT"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 10.16 0 180)
-					(length 2.54)
-					(name "SCL"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 0 7.62 270)
-					(length 2.54)
-					(name "VDD"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -10.16 0 0)
-					(length 2.54)
-					(name "~{RESET}"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -10.16 -2.54 0)
-					(length 2.54)
-					(name "R"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 0 -7.62 90)
-					(length 2.54)
-					(name "VSS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -7.62 90)
-					(length 2.54)
-					(hide yes)
-					(name "VSS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "9"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Sensor_Motion:MPU-6000"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -8704,7 +8615,7 @@
 		)
 		(uuid "3dde6216-0eb1-46c2-a546-9cdb350c5082")
 	)
-	(text "I2C: EEPROM 24AA64, SHT31, IMU MPU-6000"
+	(text "I2C: EEPROM 24AA64, SHT40, IMU MPU-6000"
 		(exclude_from_sim no)
 		(at 425.45 105.41 0)
 		(effects
@@ -8841,7 +8752,7 @@
 		)
 		(uuid "907fb064-b799-4ac5-bd89-67357f839df6")
 	)
-	(text "EEPROM 0x50, WP low.  SHT31 on board: VDD/ADDR/RESET from PB9 via R32 -> 0x45; external SHT31 on J9 -> 0x44."
+	(text "EEPROM 0x50, WP low.  SHT40-BD1B on board (U8, fixed 0x45), VDD from PB9 via R32; external SHT40-AD1B on J9 / sensor tab -> 0x44."
 		(exclude_from_sim no)
 		(at 426.72 182.88 0)
 		(effects
@@ -8918,7 +8829,18 @@
 		)
 		(uuid "af888208-08c5-4ef9-9543-743b57509b24")
 	)
-	(text "  PA14 BOOT0/SWCLK + LEFT button, PB11 RIGHT button, PB9 SHT31 power, PB10 +12V sense, PA1 Hall."
+	(text "Rev 2.2: U8 SHT31 -> SHT40-BD1B (fixed 0x45, C69 moved), snap-off SHT40-AD1B sensor tab (U15, C71, J11, MB1) on the left board edge."
+		(exclude_from_sim no)
+		(at 294.64 377.19 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "afe379a7-83eb-4dd1-a343-c401f713dcb1")
+	)
+	(text "  PA14 BOOT0/SWCLK + LEFT button, PB11 RIGHT button, PB9 SHT40 power, PB10 +12V sense, PA1 Hall."
 		(exclude_from_sim no)
 		(at 294.64 361.95 0)
 		(effects
@@ -9308,12 +9230,6 @@
 		(uuid "8877359f-e3e9-4eed-b23e-59f48a49efb4")
 	)
 	(junction
-		(at 459.74 154.94)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "8c4fd5c7-4ff5-434b-9d26-34ff186f5904")
-	)
-	(junction
 		(at 121.92 49.53)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -9536,12 +9452,6 @@
 		(uuid "e70b3ae0-5b8f-4364-8ab0-10a0b6fb122a")
 	)
 	(junction
-		(at 459.74 162.56)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ea389127-e81b-4c9e-b530-6feef024f1b6")
-	)
-	(junction
 		(at 165.1 254)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -9606,10 +9516,6 @@
 	(no_connect
 		(at 210.82 149.86)
 		(uuid "3a46907e-2453-446a-884b-e94852766a38")
-	)
-	(no_connect
-		(at 482.6 167.64)
-		(uuid "42a07a52-da50-4090-a454-595363583f90")
 	)
 	(no_connect
 		(at 43.18 154.94)
@@ -9897,16 +9803,6 @@
 	)
 	(wire
 		(pts
-			(xy 459.74 162.56) (xy 459.74 154.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "13804785-e262-4f60-aaf7-e4b4733a61ee")
-	)
-	(wire
-		(pts
 			(xy 96.52 213.36) (xy 96.52 215.9)
 		)
 		(stroke
@@ -10004,16 +9900,6 @@
 			(type default)
 		)
 		(uuid "18831748-00c2-4f48-ba6f-4c266287f1fc")
-	)
-	(wire
-		(pts
-			(xy 462.28 167.64) (xy 459.74 167.64)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "19702071-a6d4-4342-a235-21ced454e2e3")
 	)
 	(wire
 		(pts
@@ -10717,16 +10603,6 @@
 	)
 	(wire
 		(pts
-			(xy 462.28 162.56) (xy 459.74 162.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4fe23122-a066-4309-965e-f5019744dbce")
-	)
-	(wire
-		(pts
 			(xy 121.92 297.18) (xy 127 297.18)
 		)
 		(stroke
@@ -10777,7 +10653,7 @@
 	)
 	(wire
 		(pts
-			(xy 482.6 165.1) (xy 485.14 165.1)
+			(xy 482.6 167.64) (xy 485.14 167.64)
 		)
 		(stroke
 			(width 0)
@@ -12067,16 +11943,6 @@
 	)
 	(wire
 		(pts
-			(xy 459.74 165.1) (xy 459.74 162.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b29088c3-6d71-498c-b485-4a0579bb3486")
-	)
-	(wire
-		(pts
 			(xy 27.94 295.91) (xy 35.56 295.91)
 		)
 		(stroke
@@ -12544,16 +12410,6 @@
 			(type default)
 		)
 		(uuid "d5245207-8365-489f-9f9f-fdf7e09dbacc")
-	)
-	(wire
-		(pts
-			(xy 462.28 165.1) (xy 459.74 165.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d62a6c13-3f77-4492-b6bd-6ce5540cabd3")
 	)
 	(wire
 		(pts
@@ -13185,8 +13041,8 @@
 		)
 		(uuid "2061f57d-4d9f-468f-a788-9a79e86000fe")
 	)
-	(label "I2C_SCL"
-		(at 485.14 165.1 0)
+	(label "I2C_SDA"
+		(at 485.14 167.64 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -13595,7 +13451,7 @@
 		)
 		(uuid "8ba89589-86af-4e0f-a4c8-45fa1619640c")
 	)
-	(label "I2C_SDA"
+	(label "I2C_SCL"
 		(at 485.14 162.56 0)
 		(effects
 			(font
@@ -21291,8 +21147,9 @@
 		)
 	)
 	(symbol
-		(lib_id "Sensor_Humidity:SHT31A-DIS")
-		(at 472.44 165.1 0)
+		(lib_id "Sensor_Humidity:SHT4x")
+		(at 474.98 165.1 0)
+		(mirror y)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -21312,7 +21169,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "SHT31-DIS-B"
+		(property "Value" "SHT40-BD1B"
 			(at 474.98 175.26 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -21323,7 +21180,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Sensor_Humidity:Sensirion_DFN-8-1EP_2.5x2.5mm_P0.5mm_EP1.1x1.7mm"
+		(property "Footprint" "Sensor_Humidity:Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad"
 			(at 472.44 165.1 0)
 			(hide yes)
 			(show_name no)
@@ -21334,7 +21191,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/2_Humidity_Sensors/Datasheets/Sensirion_Humidity_Sensors_SHT3xA_Datasheet.pdf"
+		(property "Datasheet" "https://sensirion.com/media/documents/33FD6951/624C4357/Datasheet_SHT4x.pdf"
 			(at 472.44 165.1 0)
 			(hide yes)
 			(show_name no)
@@ -21345,7 +21202,7 @@
 				)
 			)
 		)
-		(property "Description" "I²C humidity and temperature sensor, ±2%RH, ±0.3°C, AEQ-100, DFN-8"
+		(property "Description" "Digital humidity and temperature sensor, I2C 0x45 (BD1B), 1.08-3.6 V, DFN-4 1.5x1.5"
 			(at 472.44 165.1 0)
 			(hide yes)
 			(show_name no)
@@ -21356,7 +21213,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C80862"
+		(property "LCSC" "C7461849"
 			(at 472.44 165.1 0)
 			(hide yes)
 			(show_name no)
@@ -21368,31 +21225,16 @@
 			)
 		)
 		(pin "1"
-			(uuid "437f9123-ac26-4a11-864f-e430bd6e907f")
+			(uuid "7e56e465-a02a-4d96-88aa-5e34ec6d7890")
 		)
 		(pin "2"
-			(uuid "79c31001-3232-4110-95b2-88c5e3308eed")
+			(uuid "19d4efc6-a255-431d-9927-b0df101b213c")
 		)
 		(pin "3"
-			(uuid "4e28dcf4-50f3-4f99-b10d-6f5c29be65d9")
+			(uuid "d4717fd3-c8b2-4db8-82d8-6ffc2a90c99a")
 		)
 		(pin "4"
-			(uuid "c3d933ee-233b-4557-b514-926ad820bbb4")
-		)
-		(pin "5"
-			(uuid "dd4e0802-a42c-4e60-97cd-6b509cf5e3e5")
-		)
-		(pin "6"
-			(uuid "7638fc9e-2a5f-414c-beee-c0dd3d2586af")
-		)
-		(pin "7"
-			(uuid "d129479e-abc0-4847-8095-72c50b3d0210")
-		)
-		(pin "8"
-			(uuid "4b9b7e9d-72e1-460d-a942-d5feb81f21da")
-		)
-		(pin "9"
-			(uuid "ee86b1a1-dd30-4758-8ce7-c1ee282b2711")
+			(uuid "7c4c70c7-e6d0-4c5d-9d8b-b2181d6677bf")
 		)
 		(instances
 			(project "astrouniboard"
@@ -28589,85 +28431,6 @@
 			(project "astrouniboard"
 				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
 					(reference "C62")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 459.74 167.64 270)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files no)
-		(dnp no)
-		(uuid "8c66768d-700f-489d-8835-5aee571dc96e")
-		(property "Reference" "#PWR084"
-			(at 459.74 167.64 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 455.93 167.64 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 459.74 167.64 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 459.74 167.64 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 459.74 167.64 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "440a9dbe-2b89-4141-9eab-46621db2fdd1")
-		)
-		(instances
-			(project "astrouniboard"
-				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
-					(reference "#PWR084")
 					(unit 1)
 				)
 			)
@@ -41447,6 +41210,580 @@
 				)
 			)
 		)
+	)
+	(symbol
+		(lib_id "Sensor_Humidity:SHT4x")
+		(at 314.96 394.97 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "d873e806-7a6f-4808-aa5a-6a250581df2a")
+		(property "Reference" "U15"
+			(at 320.04 392.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "SHT40-AD1B"
+			(at 320.04 394.97 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Sensor_Humidity:Sensirion_DFN-4_1.5x1.5mm_P0.8mm_SHT4x_NoCentralPad"
+			(at 314.96 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://sensirion.com/media/documents/33FD6951/624C4357/Datasheet_SHT4x.pdf"
+			(at 314.96 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Digital humidity and temperature sensor, I2C 0x44, 1.08-3.6 V, DFN-4 1.5x1.5"
+			(at 314.96 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2909890"
+			(at 314.96 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5ce91e25-f7b0-4ef9-885a-b6514f6fe8a6")
+		)
+		(pin "2"
+			(uuid "0eb4b287-aa17-4509-bcf4-0bc68dbeb1c7")
+		)
+		(pin "3"
+			(uuid "e86f494f-c52e-4b28-bf1f-e4fd5e3d89f1")
+		)
+		(pin "4"
+			(uuid "4a4a9c8b-4d8d-44b4-9635-8ca8d1486948")
+		)
+		(instances
+			(project "astrouniboard"
+				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
+					(reference "U15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "SENS_SCL"
+		(at 307.34 392.43 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "c3c816f3-f579-44fb-85f6-05d04d46d339")
+	)
+	(label "SENS_SDA"
+		(at 307.34 397.51 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "0ce8ac1d-5deb-4f9a-8f5e-00bcacc16052")
+	)
+	(label "SENS_VDD"
+		(at 317.5 387.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "dc1a1221-fa1f-4118-8e0b-a5b588e188a1")
+	)
+	(label "SENS_GND"
+		(at 317.5 402.59 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4554463c-5c09-4f9a-a255-926e76f830be")
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 332.74 394.97 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "0d08b365-7708-4f12-aa83-f884f10008f0")
+		(property "Reference" "C71"
+			(at 335.28 393.7 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100nF"
+			(at 335.28 396.24 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 332.74 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 332.74 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 332.74 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1525"
+			(at 332.74 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6b41e6ea-ffbb-4d72-b672-cd178c44fe99")
+		)
+		(pin "2"
+			(uuid "b5d97f75-3fd9-4af9-a87c-f86e5d2c57e0")
+		)
+		(instances
+			(project "astrouniboard"
+				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
+					(reference "C71")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "SENS_VDD"
+		(at 332.74 391.16 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "cdb4efba-9a5f-413a-b06a-090a0c766b8e")
+	)
+	(label "SENS_GND"
+		(at 332.74 398.78 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "45ff440b-abe0-4b91-9ee2-0112ab9dc359")
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x04")
+		(at 360.68 394.97 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "eb8517c6-19a6-478b-8a7a-642a8806efb3")
+		(property "Reference" "J11"
+			(at 363.22 392.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "SensorTab_WirePads"
+			(at 363.22 394.97 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "AstroUniBoard:SensorTab_WirePads_2Top_2Bottom"
+			(at 360.68 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 360.68 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Wire pads on the snap-off tab: 1 VDD, 2 GND (top side), 3 SDA, 4 SCL (bottom side)"
+			(at 360.68 394.97 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "9e6bf61d-1d0f-454b-8fca-6634a7af40b7")
+		)
+		(pin "2"
+			(uuid "25a8dc75-0b81-4670-b709-df7e18db91bd")
+		)
+		(pin "3"
+			(uuid "9e5efd94-05ca-4498-8be6-05b331745bfa")
+		)
+		(pin "4"
+			(uuid "44fb750b-527b-4a03-8c85-6631ac144c45")
+		)
+		(instances
+			(project "astrouniboard"
+				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
+					(reference "J11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "SENS_VDD"
+		(at 355.6 392.43 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "2a13ee6b-a36f-4867-a0b0-d284cb25dbc9")
+	)
+	(label "SENS_GND"
+		(at 355.6 394.97 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d9640947-adfc-4aab-a10d-e3cbc9c9164e")
+	)
+	(label "SENS_SDA"
+		(at 355.6 397.51 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "a3d2fa6e-249c-497a-bc3b-b0202307f40b")
+	)
+	(label "SENS_SCL"
+		(at 355.6 400.05 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "96fa3549-9f9b-46e4-8323-2c0f3ae146ae")
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 342.9 387.35 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "2caf2c86-e45d-4361-be67-a4bdb6d092b4")
+		(property "Reference" "#FLG06"
+			(at 342.9 387.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 342.9 387.35 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 342.9 387.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 342.9 387.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 342.9 387.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "b64b3d7e-b169-4864-b91c-413858330200")
+		)
+		(instances
+			(project "astrouniboard"
+				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
+					(reference "#FLG06")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "SENS_VDD"
+		(at 342.9 387.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "64e9b7c0-a4d4-4b8f-87e1-4036cf480158")
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 342.9 402.59 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "081069bf-e9f9-498d-a093-f77462df5cae")
+		(property "Reference" "#FLG07"
+			(at 342.9 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 342.9 402.59 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 342.9 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 342.9 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 342.9 402.59 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7c7ab6e6-0958-4a73-8f4c-3b12c9bb959c")
+		)
+		(instances
+			(project "astrouniboard"
+				(path "/2d1f2d8d-9e09-4a96-b568-6430e79b6c63"
+					(reference "#FLG07")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(label "SENS_GND"
+		(at 342.9 402.59 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f9c423f8-821c-4625-b93b-d7a7da2cb0d3")
+	)
+	(text "Snap-off sensor tab (SHT40-AD1B, I2C 0x44)"
+		(exclude_from_sim no)
+		(at 302.26 381 0)
+		(effects
+			(font
+				(size 2 2)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "45dea191-f8f2-4e4e-bce5-635796a5965d")
+	)
+	(text "Tab 4 x 10 mm on the left board edge, attached over its full\nwidth by one mouse-bite row (MB1: 4 NPTH 0.6 mm, 1.0 mm pitch).\nNo copper crosses the snap line: SENS_* are the tab's own nets.\nSnap off, then wire to J9: SDA -> 1, SCL -> 2, VDD -> 3, GND -> 4.\nPads: VDD and GND on top, SDA and SCL on the bottom. No pour.\nSHT40-AD1B = 0x44 (on-board U8 SHT40-BD1B = 0x45)."
+		(exclude_from_sim no)
+		(at 391.16 403.86 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "987d07cd-8f54-4b0c-97f1-4cb319d10ef1")
 	)
 	(sheet_instances
 		(path "/"

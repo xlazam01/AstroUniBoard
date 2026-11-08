@@ -12,10 +12,10 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board |
+| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board. **HW rev 2.2** (SHT40 on the board + snap-off SHT40 sensor tab) is designed, not ordered; it needs firmware with SHT4x support (PR #91) |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
-| Sensors | SHT31 temperature/humidity on board (+ optional external SHT31), MPU-6000 accelerometer for camera roll |
+| Sensors | SHT40 temperature/humidity on board (+ a second SHT40 on a snap-off tab for outside the board), MPU-6000 accelerometer for camera roll |
 | Host | USB-C, CDC serial, VID/PID 1209:0001 (pid.codes test PID until our own is assigned) |
 | Hub | CH334P, one downstream USB-C for the camera (or a guide camera, or any other device) |
 | Power | 12 V on an XT30 (motors + 5.3 V buck). Logic also runs from USB alone, without motors |
@@ -48,8 +48,9 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **Two identical motor channels: focuser and rotator** | 2 × TMC2209 (U3 focuser, U2 rotator), same parts and 0.11 Ω sense on both | The same driver circuit twice, so either channel can take either job, and one BOM line covers both. **Focuser:** version 1 targets the **guide-camera focuser** behind an OAG, which N.I.N.A. cannot focus on its own (see the [Secondary Focuser plugin](https://github.com/xlazam01/SecondaryFocuser-NINA)); StallGuard can stop a move against a hard stop. **Rotator:** the firmware keeps the mechanical angle and never crosses the cable-wrap limits (default ±180°, configurable); the sky offset stays with the host. StealthChop keeps both silent and avoids vibration during exposures |
 | **One UART for both drivers** | USART2, addresses 0 / 1 | Run current, hold current, microsteps and mode can be set at runtime and saved, with no pots to adjust. Driver faults, overtemperature and StallGuard are visible to the host |
 | **Camera roll sensor** | MPU-6000 U10 (I²C, 0x68) | The board rotates with the camera, so the accelerometer measures camera roll against gravity. That gives **IMU homing**: the rotator finds its zero without a switch, flag or Hall sensor. Calibrate once (three captures, any mounting orientation, also upside down) |
-| **Temperature / humidity** | SHT31 U8 (0x45) | For temperature compensation of focus (done on the host) and for dew point (ASCOM ObservingConditions). It is on the board because the board sits on the optical train |
-| **Switched sensor supply** | PB9 → R32 → SHT31 VDD and ADDR | **Less self-heating:** the SHT31 sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (Firmware 2.0.0 still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) Tying ADDR to the same pin moves the on-board sensor to 0x45, so an **external SHT31 on J9** (0x44) fits on the same bus, for example on the dew shield |
+| **Temperature / humidity** | SHT40-BD1B U8 (0x45; SHT31 on rev 2.0/2.1) | For temperature compensation of focus (done on the host) and for dew point (ASCOM ObservingConditions). It is on the board because the board sits on the optical train |
+| **Switched sensor supply** | PB9 → R32 → SHT40 VDD | **Less self-heating:** the sensor sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (Firmware 2.0.0 still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) The on-board SHT40-BD1B answers at 0x45, so the **external SHT40-AD1B** (0x44) fits on the same bus. (Rev 2.0 got the same split from an SHT31 with ADDR tied to PB9.) |
+| **Snap-off sensor tab** (rev 2.2) | U15 SHT40-AD1B at the tip of a 4 × 10 mm tab on the left edge, one mouse-bite row | The board's own sensor reads the board, not the air. Snap the tab off with pliers, wire its pads to J9 (3V3/GND on top, SDA/SCL on the bottom) and put it where the air temperature matters, for example on the dew shield. No copper pour on the tab, so it carries little heat. It is part of the same PCB and is assembled with it, so there is no second board to order |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
 | **Power path** | XT30 J6 → F1 2 A polyfuse → D24 SMF15A TVS (rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. F1 trips on a short or overload behind it and resets when cooled. There is no reverse-polarity FET: a reversed supply drives D24 forward until F1 trips, which may cost D24. Rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
@@ -74,7 +75,7 @@ focuser + rotator it was designed for, these uses came up (details in [docs/USE_
 | **Motorised dust cap / flat panel** | Firmware only for the cap; the panel dimming needs PWM on AUX (J8) |
 | **Small mount or star tracker** (barn door, camera-lens mount) | Both channels as RA/Dec, board mounted straight on a NEMA 14; the IMU helps with levelling. OnStepX-based, needs more flash (G0B1CC/CE) |
 | **Telescope cover, roof or small dome shutter** | Light loads only (TMC2209, about 2 A peak) |
-| **Mount / observatory monitor** | IMU for vibration, wind shake and "scope bumped" alarms; SHT31 for dew-point alerts |
+| **Mount / observatory monitor** | IMU for vibration, wind shake and "scope bumped" alarms; SHT40 for dew-point alerts |
 | **Dew heater control** | PWM on AUX1/AUX2 to an external MOSFET, closed loop on the dew point |
 | **GPS, sky quality meter, cloud sensor** | GPS on UART6 (J10); TSL2591 or MLX90614 on I²C (J9), as an ASCOM SafetyMonitor / ObservingConditions |
 | **Non-astro** | Camera slider or pan/tilt for timelapse, microscope focus stacking, 3D-scan turntable, syringe pump or slow linear stage |
@@ -93,7 +94,7 @@ These options were weighed during the design, with the reason for each decision.
 | Code sharing with OpenWheel | Copy & adapt | Common library or submodule | Only two devices so far; extract a library when a third one needs it ([ADR 0001](docs/adr/0001-shared-code-openwheel.md)) |
 | Rotator homing | IMU gravity homing (optional at boot) | Hall sensor or limit switch on J4 | No extra parts on the rotating ring. J4 stays available for a Hall index |
 | Focuser homing | None: soft limits 0…max, position kept in EEPROM, manual sync | Home switch or StallGuard homing | A focuser rarely needs a home position. Fewer moving parts and no slamming into the end stop |
-| Temperature compensation | On the host (driver / N.I.N.A.) | In the firmware | The host knows the filter, the optics and the AF history. The firmware only reports SHT31 data |
+| Temperature compensation | On the host (driver / N.I.N.A.) | In the firmware | The host knows the filter, the optics and the AF history. The firmware only reports the sensor data |
 | ASCOM architecture | One LocalServer: Focuser + Rotator + ObservingConditions on one port | In-process DLLs | N.I.N.A., the debug app and the plugin can be connected at the same time |
 | Network | USB only. Alpaca after 2.0 | Alpaca / Wi-Fi on the device | No ESP on the board. Keeps the device simple and the attack surface small |
 | Power connector | XT30 (keyed, 15 A class) | 5.5/2.1 barrel jack (rev 1) | Barrel jacks fall out and short when they are plugged in. The XT30 is keyed against reverse polarity and locks firmly |
@@ -118,7 +119,8 @@ These options were weighed during the design, with the reason for each decision.
 | J3 | pads, DNP | Focuser motor (solder wires or a vertical JST-PH 4) | 1 B2 (G), 2 B1 (BK), 3 A1 (R), 4 A2 (BL): colours on the bottom silkscreen |
 | J4 | pads, DNP | Hall / index input | 1 3V3, 2 GND, 3 HALL |
 | J8 | pads, DNP | AUX GPIO | 1 3V3, 2 AUX1 (X1), 3 AUX2 (X2), 4 GND |
-| J9 | pads, DNP | External I²C (second SHT31 at 0x44) | 1 SDA, 2 SCL, 3 3V3, 4 GND |
+| J9 | pads, DNP | External I²C (the snap-off SHT40 tab at 0x44, or any I²C sensor) | 1 SDA, 2 SCL, 3 3V3, 4 GND |
+| J11 | snap-off tab, left edge | Wire pads of the SHT40 tab (U15) | top: 3V3, GND; bottom: SDA, SCL → J9 1 SDA, 2 SCL, 3 3V3, 4 GND |
 | J10 | pads, DNP | UART6 | 1 3V3, 2 TX6, 3 RX6, 4 GND |
 | JP4 | top, between the XT30 pins | Motor supply (Vdrive), 3 pads `12V – Vdrive – 5V` | **12V side bridged** by default |
 
@@ -127,7 +129,7 @@ a swapped pair makes the motor buzz instead of turning. It does not damage anyth
 
 ## Bill of materials
 
-Rev 2.1, JLCPCB assembly. Every fitted part carries an `LCSC` field in the schematic, so the JLC fabrication toolkit
+Rev 2.2, JLCPCB assembly. Every fitted part carries an `LCSC` field in the schematic, so the JLC fabrication toolkit
 fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see the notes below the table.
 
 | Ref | Qty | Value | Package | LCSC |
@@ -136,7 +138,8 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | U2, U3 | 2 | TMC2209-LA-T | QFN-28 5×5 | C2150710 |
 | U6 | 1 | CH334P USB 2.0 hub | LQFN-16 3×3 | C5373042 |
 | U10 | 1 | MPU-6000 | QFN-24 4×4 | C92401 |
-| U8 | 1 | SHT31-DIS-B | DFN-8 2.5×2.5 | C80862 |
+| U8 | 1 | SHT40-BD1B-R2 (0x45) | DFN-4 1.5×1.5 | C7461849 |
+| U15 | 1 | SHT40-AD1B-R2 (0x44, snap-off tab) | DFN-4 1.5×1.5 | C2909890 |
 | U4 | 1 | 24AA64T-I/OT | SOT-23-5 | C2061092 |
 | U12 | 1 | ME3116AM6G buck | SOT-23-6 | C97643 |
 | U1 | 1 | ME6231A33M3G 3.3 V LDO | SOT-23 | C2765181 |
@@ -159,7 +162,7 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | C14, C48–C51 | 5 | 10 µF 6.3 V | 0402 | C15525 |
 | C1, C10, C11, C33 | 4 | 1 µF | 0402 | C52923 |
 | C19–C23, C25–C27, C30, C56 | 10 | 100 nF 50 V | 0402 | C307331 |
-| C6, C8, C9, C12, C15, C17, C34, C35, C52, C54, C55, C58, C69, C70 | 14 | 100 nF 16 V | 0402 | C1525 |
+| C6, C8, C9, C12, C15, C17, C34, C35, C52, C54, C55, C58, C69, C70, C71 | 15 | 100 nF 16 V | 0402 | C1525 |
 | C7, C18 | 2 | 22 nF 50 V | 0402 | C1532 |
 | C57 | 1 | 2.2 nF 50 V | 0402 | C1531 |
 | C4, C5 | 2 | 10 pF | 0402 | C32949 |
@@ -238,7 +241,7 @@ B4B-PH-K from the top. Leave some strain relief: a zip tie through one of the mo
 
 ### 3. Optional sockets
 
-J4 (Hall), J8 (AUX), J9 (external SHT31 / I²C), J10 (UART6): vertical JST-PH, inserted from the top. They are
+J4 (Hall), J8 (AUX), J9 (external sensor / I²C), J10 (UART6): vertical JST-PH, inserted from the top. They are
 DNP because most users don't need them, and a vertical socket in the cable path is in the way in a tight enclosure.
 
 ### 4. Solder jumper JP4
