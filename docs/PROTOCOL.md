@@ -463,7 +463,9 @@ use (ASCOM ObservingConditions, INDI WEATHER, host temperature compensation): `s
 external. Auto (default) prefers the external J9 sensor — the on-board one sits next to the motor
 drivers and reads warm. `:91` is the detailed view for the debug app: on-board group first, then
 external; `st` 0 valid, 1 no answer (absent, unpowered or bus fault), 2 CRC error, 3 no measurement yet since boot (`ShtStatus` in `fw/src/env_sht31.h`); values are the last good
-reading; `power_cycles` counts restarts of the sensor supply (PB9 `SHT_PWR`). Each sensor may be
+reading; `power_cycles` counts restarts of the on-board sensor's supply (PB9 `SHT_PWR`), done after 3
+failed readings in a row of a sensor that answered before. J9 runs from the plain 3V3 rail, so a hung
+external sensor gets a soft reset instead (not counted). Each sensor may be
 an SHT3x or an SHT4x: on-board (I2C 0x45) SHT31 on rev 2.0 / 2.1, SHT40 on rev 2.2; J9 (0x44) an SHT31
 module or the rev 2.2 SHT40 snap-off tab. The firmware detects the family of each by itself (SHT4x
 serial number read, SHT3x when that gets no answer) and probes again after every failed reading and

@@ -1,6 +1,7 @@
 // SHT3x / SHT4x driver. Both sensors are auto-detected: on-board U8 (0x45) is an SHT31 on rev 2.0 / 2.1 and an
 // SHT40-BD1B on rev 2.2; the external J9 sensor (0x44) is an SHT31 module or the rev 2.2 snap-off tab
-// (SHT40-AD1B). Both U8 variants are powered from PB9 (SHT_PWR), so the power-cycle recovery covers either.
+// (SHT40-AD1B). Recovery of a hung sensor: U8 (either variant) runs from PB9 (SHT_PWR) and gets a supply
+// power cycle; the J9 sensor runs from the plain 3V3 rail and gets a soft reset.
 // SHT3x-DIS datasheet: single shot 0x2400, high repeatability, no clock stretching.
 // SHT4x datasheet: one-byte commands, 0xFD measure high precision (8.3 ms max), 0x89 serial number.
 // Both answer with 6 bytes T(2)+CRC, RH(2)+CRC and use the same CRC-8.
@@ -19,7 +20,7 @@ static const uint32_t MEAS_WAIT_MS      = 20;    // SHT3x high repeatability 15.
 static const uint32_t PROBE_WAIT_MS     = 10;    // SHT4x serial number read (0x89); Sensirion's driver waits 10 ms
 static const uint32_t POWER_OFF_MS      = 100;   // supply off time when recovering the sensor
 static const uint32_t POWER_UP_MS       = 2;     // datasheets: 1 ms max to idle after VDD rises (both families)
-static const uint8_t  FAILS_BEFORE_CYCLE = 3;    // consecutive failures of a seen sensor before a power cycle
+static const uint8_t  FAILS_BEFORE_CYCLE = 3;    // consecutive failures of a seen sensor before a recovery
 
 static const uint8_t ADDRS[ENV_SENSOR_COUNT] = { SHT31_ADDR_ONBOARD, SHT31_ADDR_EXTERNAL };
 
@@ -39,6 +40,7 @@ static uint8_t    fails[ENV_SENSOR_COUNT];   // consecutive failures after it wa
 static uint16_t   powerCycles;
 static ShtFamily  family[ENV_SENSOR_COUNT];
 static bool       probing[ENV_SENSOR_COUNT];   // probe started in this cycle, answer still to be read
+static ShtFamily  lastFamily[ENV_SENSOR_COUNT];   // family of the last good reading (kept while re-detecting)
 
 static void enter(EnvState s) { state = s; stateSince = millis(); }
 
@@ -100,6 +102,14 @@ static void finishProbe(EnvSensor s) {
     if (st == SHT_OK)          family[s] = FAM_SHT4X;
     else if (st == SHT_NO_ACK) family[s] = FAM_SHT3X;
     else                       readings[s].status = SHT_BAD_CRC;
+}
+
+// Soft reset (SHT4x 0x94, 1 ms; SHT3x 0x30A2, 1.5 ms), done long before the next cycle 2 s later.
+static void softReset(EnvSensor s) {
+    static const uint8_t CMD_SHT3X[2] = { 0x30, 0xA2 };
+    static const uint8_t CMD_SHT4X[1] = { 0x94 };
+    if (lastFamily[s] == FAM_SHT4X) writeCommand(ADDRS[s], CMD_SHT4X, 1);
+    else                            writeCommand(ADDRS[s], CMD_SHT3X, 2);
 }
 
 // Triggers a measurement on every sensor whose family is known. A sensor still unknown was not detected
@@ -187,16 +197,17 @@ void envUpdate() {
                 if (triggered[i]) readMeasurement((EnvSensor)i);
             }
             // Either sensor may be absent (on-board U8 not fitted, nothing on J9). A sensor that answered
-            // before and now fails repeatedly has hung: cycle the shared supply.
-            bool hung = false;
+            // before and now fails repeatedly has hung.
+            bool hung[ENV_SENSOR_COUNT] = { false, false };
             for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
-                if (readings[i].status == SHT_OK) { seen[i] = true; fails[i] = 0; }
-                else if (seen[i] && ++fails[i] >= FAILS_BEFORE_CYCLE) hung = true;
-            }
-            for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++)
+                if (readings[i].status == SHT_OK) { seen[i] = true; fails[i] = 0; lastFamily[i] = family[i]; }
+                else if (seen[i] && ++fails[i] >= FAILS_BEFORE_CYCLE) { hung[i] = true; fails[i] = 0; }
                 if (readings[i].status != SHT_OK) family[i] = FAM_UNKNOWN;   // re-detect before the next try
-            if (hung) {
-                for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) { fails[i] = 0; family[i] = FAM_UNKNOWN; }
+            }
+            // J9 pin 3 is the plain 3V3 rail, not SHT_VDD: a PB9 power cycle does not reach the external
+            // sensor. Soft-reset it instead, with the command of the family it last answered as.
+            if (hung[ENV_EXTERNAL]) softReset(ENV_EXTERNAL);
+            if (hung[ENV_ONBOARD]) {   // U8 runs from PB9 (SHT_VDD): cycle its supply
                 powerCycles++;
                 digitalWrite(PIN_SHT_PWR, LOW);
                 enter(ST_POWER_OFF);
