@@ -1,4 +1,8 @@
-// SHT31 driver (Sensirion SHT3x-DIS datasheet: single shot, high repeatability, no clock stretching).
+// SHT3x / SHT4x driver. The on-board U8 (0x45) is always an SHT31; the external J9 sensor (0x44) may be an
+// SHT3x (SHT31 module) or an SHT4x (rev 2.1 snap-off tab: SHT40-AD1B) and is auto-detected.
+// SHT3x-DIS datasheet: single shot 0x2400, high repeatability, no clock stretching.
+// SHT4x datasheet: one-byte commands, 0xFD measure high precision (8.3 ms max), 0x89 serial number.
+// Both answer with 6 bytes T(2)+CRC, RH(2)+CRC and use the same CRC-8.
 #include <Arduino.h>
 #include <Wire.h>
 #include <math.h>
@@ -10,14 +14,19 @@
 #include "settings.h"
 
 static const uint32_t ENV_PERIOD_MS     = 2000;  // measurement interval
-static const uint32_t MEAS_WAIT_MS      = 20;    // high repeatability: 15.5 ms max
+static const uint32_t MEAS_WAIT_MS      = 20;    // SHT3x high repeatability 15.5 ms max, SHT4x high precision 8.3 ms
+static const uint32_t PROBE_WAIT_MS     = 10;    // SHT4x serial number read (0x89); Sensirion's driver waits 10 ms
 static const uint32_t POWER_OFF_MS      = 100;   // supply off time when recovering the sensor
-static const uint32_t POWER_UP_MS       = 2;     // datasheet: 1 ms max to idle after VDD rises
+static const uint32_t POWER_UP_MS       = 2;     // datasheets: 1 ms max to idle after VDD rises (both families)
 static const uint8_t  FAILS_BEFORE_CYCLE = 3;    // consecutive failures of a seen sensor before a power cycle
 
 static const uint8_t ADDRS[ENV_SENSOR_COUNT] = { SHT31_ADDR_ONBOARD, SHT31_ADDR_EXTERNAL };
 
-enum EnvState : uint8_t { ST_POWER_UP, ST_IDLE, ST_MEASURING, ST_POWER_OFF };
+enum EnvState : uint8_t { ST_POWER_UP, ST_IDLE, ST_PROBING, ST_MEASURING, ST_POWER_OFF };
+
+// Sensor family. Unknown = the external sensor is probed before its next measurement: at boot, after a
+// supply power cycle and after every failed measurement (the sensor on J9 may have been swapped).
+enum ShtFamily : uint8_t { FAM_UNKNOWN, FAM_SHT3X, FAM_SHT4X };
 
 static ShtReading readings[ENV_SENSOR_COUNT] = { { SHT_NO_DATA, 0, 0, 0 }, { SHT_NO_DATA, 0, 0, 0 } };
 static bool       triggered[ENV_SENSOR_COUNT];
@@ -27,6 +36,7 @@ static uint32_t   lastStart;
 static bool       seen[ENV_SENSOR_COUNT];    // answered at least once since boot
 static uint8_t    fails[ENV_SENSOR_COUNT];   // consecutive failures after it was seen
 static uint16_t   powerCycles;
+static ShtFamily  family[ENV_SENSOR_COUNT] = { FAM_SHT3X, FAM_UNKNOWN };   // on-board U8 is always an SHT31
 
 static void enter(EnvState s) { state = s; stateSince = millis(); }
 
@@ -39,10 +49,10 @@ static uint8_t crc8(const uint8_t* data, uint8_t len) {
     return crc;
 }
 
-static bool startMeasurement(uint8_t addr) {
+// Writes a command; on failure records the Wire error in the diag note (on-board bits 16.., external 20..).
+static bool writeCommand(uint8_t addr, const uint8_t* cmd, uint8_t len) {
     Wire.beginTransmission(addr);
-    Wire.write(0x24);   // single shot, high repeatability, clock stretching disabled
-    Wire.write(0x00);
+    for (uint8_t i = 0; i < len; i++) Wire.write(cmd[i]);
     const uint8_t err = Wire.endTransmission();
     if (err == 0) return true;
     // STM32duino Wire (core 2.12, G0, interrupt mode): after a NACK from an absent device the next transfer
@@ -53,30 +63,76 @@ static bool startMeasurement(uint8_t addr) {
     return false;
 }
 
-static void readMeasurement(EnvSensor s) {
-    ShtReading& r = readings[s];
+// Reads the 6-byte answer (word + CRC, word + CRC) into w[2].
+static ShtStatus readWords(uint8_t addr, uint16_t w[2]) {
     uint8_t buf[6];
-    if (Wire.requestFrom(ADDRS[s], (uint8_t)6) != 6) {
-        r.status = SHT_NO_ACK;
-        i2cRestart();   // same STM32duino Wire workaround as in startMeasurement()
-        return;
+    if (Wire.requestFrom(addr, (uint8_t)6) != 6) {
+        i2cRestart();   // same STM32duino Wire workaround as in writeCommand()
+        return SHT_NO_ACK;
     }
     for (uint8_t i = 0; i < 6; i++) buf[i] = (uint8_t)Wire.read();
-    if (crc8(buf, 2) != buf[2] || crc8(buf + 3, 2) != buf[5]) { r.status = SHT_BAD_CRC; return; }
+    if (crc8(buf, 2) != buf[2] || crc8(buf + 3, 2) != buf[5]) return SHT_BAD_CRC;
+    w[0] = (uint16_t)((buf[0] << 8) | buf[1]);
+    w[1] = (uint16_t)((buf[3] << 8) | buf[4]);
+    return SHT_OK;
+}
 
-    const float t  = -45.0f + 175.0f * (float)((buf[0] << 8) | buf[1]) / 65535.0f;
-    const float rh = 100.0f * (float)((buf[3] << 8) | buf[4]) / 65535.0f;
+static bool startMeasurement(EnvSensor s) {
+    static const uint8_t CMD_SHT3X[2] = { 0x24, 0x00 };   // single shot, high repeatability, no clock stretching
+    static const uint8_t CMD_SHT4X[1] = { 0xFD };         // measure T + RH, high precision
+    if (family[s] == FAM_SHT4X) return writeCommand(ADDRS[s], CMD_SHT4X, 1);
+    return writeCommand(ADDRS[s], CMD_SHT3X, 2);
+}
+
+// External sensor probe, step 1: ask for the SHT4x serial number. An SHT3x takes the single byte as an
+// incomplete command and has no data to send, so it NACKs the read in step 2.
+static bool startProbe() {
+    static const uint8_t CMD_SERIAL[1] = { 0x89 };
+    return writeCommand(ADDRS[ENV_EXTERNAL], CMD_SERIAL, 1);
+}
+
+// Step 2: 6 valid bytes = SHT4x, no answer = SHT3x. A CRC error leaves the family unknown (probe again).
+static void finishProbe() {
+    uint16_t w[2];
+    const ShtStatus st = readWords(ADDRS[ENV_EXTERNAL], w);
+    if (st == SHT_OK)          family[ENV_EXTERNAL] = FAM_SHT4X;
+    else if (st == SHT_NO_ACK) family[ENV_EXTERNAL] = FAM_SHT3X;
+    else                       readings[ENV_EXTERNAL].status = SHT_BAD_CRC;
+}
+
+// Triggers a measurement on every sensor whose family is known. A sensor still unknown was not detected
+// in this cycle: no answer to the probe (status 1) or a CRC error in it (status 2, set by finishProbe()).
+static void startAll() {
+    for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
+        diagMark((DiagMark)(DIAG_ENV_START0 + i));
+        const bool known = family[i] != FAM_UNKNOWN;
+        triggered[i] = known && startMeasurement((EnvSensor)i);
+        if (!triggered[i] && (known || readings[i].status != SHT_BAD_CRC)) readings[i].status = SHT_NO_ACK;
+    }
+    enter(ST_MEASURING);
+}
+
+static void readMeasurement(EnvSensor s) {
+    ShtReading& r = readings[s];
+    uint16_t w[2];
+    r.status = readWords(ADDRS[s], w);
+    if (r.status != SHT_OK) return;
+
+    const float t = -45.0f + 175.0f * (float)w[0] / 65535.0f;   // same for both families
+    const float rh = (family[s] == FAM_SHT4X)
+                         ? fminf(fmaxf(-6.0f + 125.0f * (float)w[1] / 65535.0f, 0.0f), 100.0f)
+                         : 100.0f * (float)w[1] / 65535.0f;
     const float g  = logf(fmaxf(rh, 0.1f) / 100.0f) + 17.62f * t / (243.12f + t);
     const float dp = 243.12f * g / (17.62f - g);
 
     r.tDeciC   = (int16_t)lroundf(t * 10.0f);
     r.rhDeci   = (uint16_t)lroundf(rh * 10.0f);
     r.dewDeciC = (int16_t)lroundf(dp * 10.0f);
-    r.status   = SHT_OK;
 }
 
 void envBegin() {
     for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) readings[i] = { SHT_NO_DATA, 0, 0, 0 };
+    family[ENV_EXTERNAL] = FAM_UNKNOWN;
     pinMode(PIN_SHT_PWR, OUTPUT);
     digitalWrite(PIN_SHT_PWR, HIGH);
     lastStart = millis() - ENV_PERIOD_MS;   // measure as soon as the sensor is up
@@ -93,12 +149,19 @@ void envUpdate() {
         case ST_IDLE:
             if (now - lastStart < ENV_PERIOD_MS) break;
             lastStart = now;
-            for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) {
-                diagMark((DiagMark)(DIAG_ENV_START0 + i));
-                triggered[i] = startMeasurement(ADDRS[i]);
-                if (!triggered[i]) readings[i].status = SHT_NO_ACK;
+            if (family[ENV_EXTERNAL] == FAM_UNKNOWN) {
+                diagMark(DIAG_ENV_PROBE);
+                if (startProbe()) { enter(ST_PROBING); break; }
+                // no answer: nothing on J9, measure the on-board sensor only
             }
-            enter(ST_MEASURING);
+            startAll();
+            break;
+
+        case ST_PROBING:
+            if (now - stateSince < PROBE_WAIT_MS) break;
+            diagMark(DIAG_ENV_PROBE);
+            finishProbe();
+            startAll();
             break;
 
         case ST_MEASURING: {
@@ -114,6 +177,7 @@ void envUpdate() {
                 if (readings[i].status == SHT_OK) { seen[i] = true; fails[i] = 0; }
                 else if (seen[i] && ++fails[i] >= FAILS_BEFORE_CYCLE) hung = true;
             }
+            if (readings[ENV_EXTERNAL].status != SHT_OK) family[ENV_EXTERNAL] = FAM_UNKNOWN;   // re-detect
             if (hung) {
                 for (uint8_t i = 0; i < ENV_SENSOR_COUNT; i++) fails[i] = 0;
                 powerCycles++;

@@ -17,6 +17,7 @@ enum DiagMark : uint8_t {
     DIAG_ENV_UPDATE = 11,
     DIAG_ENV_START0 = 12,   // + sensor index: trigger measurement
     DIAG_ENV_READ0 = 14,    // + sensor index: read result
+    DIAG_ENV_PROBE = 16,    // external sensor family probe (SHT4x serial number read)
     DIAG_FOC_UPDATE = 20,
     DIAG_ROT_UPDATE = 21,
     DIAG_TMC_UPDATE = 22,

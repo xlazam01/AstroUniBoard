@@ -137,7 +137,7 @@ ASTROUNIBOARD,REV2,FW2.0.0,2,3A00FF12ABCD,F#
 | firmware | `FW<major>.<minor>.<patch>` |
 | protocol | this document's protocol version (integer) |
 | serial | MCU unique ID, same as the USB serial number |
-| caps | hex bitmask of what this **firmware build** supports: bit0 focuser, bit1 rotator, bit2 IMU, bit3 environment (SHT31) |
+| caps | hex bitmask of what this **firmware build** supports: bit0 focuser, bit1 rotator, bit2 IMU, bit3 environment (SHT3x / SHT4x) |
 
 Whether a sensor actually answered is in the status flags (3.2), not in caps. A host accepts a port
 only if the USB VID/PID match **and** this line parses with a supported protocol version. Answering
@@ -169,7 +169,7 @@ S,1,12500,-1,9000,-1,0,30#
 | 2 | EEPROM fault (missing, bad CRC → defaults in use) |
 | 3 | housekeeping warning (see `:40#`) |
 | 4 | on-board SHT31 has a valid reading |
-| 5 | external SHT31 (J9) has a valid reading |
+| 5 | external sensor (J9, SHT3x or SHT4x) has a valid reading |
 | 6 | IMU answering |
 | 7 | IMU zero not calibrated |
 | 8 | safe mode: started after a watchdog reset with sensors disabled (see `:46#`); move rules in [§4](#4-device-blocks) |
@@ -445,7 +445,7 @@ Example:
 | Cmd | Name | Params | Answer |
 |---|---|---|---|
 | 90 | environment (selected sensor) | | `W,<src>,<t>,<rh>,<dew>#` / `ERR,14` |
-| 91 | both SHT31 sensors | | `V,<st>,<t>,<rh>,<dew>,<st>,<t>,<rh>,<dew>,<power_cycles>#` |
+| 91 | both sensors (on-board, J9) | | `V,<st>,<t>,<rh>,<dew>,<st>,<t>,<rh>,<dew>,<power_cycles>#` |
 | 92 | get sensor selection | | `0` auto, `1` on-board, `2` external |
 | 93 | set sensor selection | `0` / `1` / `2` | `OK#` / `ERR,7` |
 | 94 | IMU reading | | `I,<roll>,<tilt>,<ax>,<ay>,<az>#` / `ERR,14` |
@@ -463,7 +463,11 @@ use (ASCOM ObservingConditions, INDI WEATHER, host temperature compensation): `s
 external. Auto (default) prefers the external J9 sensor — the on-board one sits next to the motor
 drivers and reads warm. `:91` is the detailed view for the debug app: on-board group first, then
 external; `st` 0 valid, 1 no answer (absent, unpowered or bus fault), 2 CRC error, 3 no measurement yet since boot (`ShtStatus` in `fw/src/env_sht31.h`); values are the last good
-reading; `power_cycles` counts supply restarts of the on-board sensor. Readings are refreshed every
+reading; `power_cycles` counts restarts of the sensor supply (PB9 `SHT_PWR`). The
+J9 sensor (I2C 0x44) may be an SHT3x or an SHT4x (rev 2.1 snap-off tab: SHT40); the firmware detects
+the family by itself (SHT4x serial number read, SHT3x when that gets no answer) and probes again after
+every failed reading, so a swapped sensor is picked up within one or two readings. The answers do not
+change with the family. Readings are refreshed every
 2 s. No temperature compensation in the firmware (Q21).
 
 **IMU** (MPU-6000 on I2C 0x68, on the board that rotates with the camera, Q19).
@@ -529,7 +533,7 @@ different meaning; codes OpenWheel uses for wheel-only faults are left unused he
 | 11 | bad format / line too long | rejection | |
 | 12 | not changeable at runtime | rejection | |
 | 13 | motor stalled (StallGuard) | sticky fault | |
-| 14 | sensor missing or no valid reading | rejection | SHT31 / IMU query without a valid value |
+| 14 | sensor missing or no valid reading | rejection | SHT3x / SHT4x / IMU query without a valid value |
 | 15 | IMU: optical axis too close to vertical | rejection | `:77` / `:95` near the zenith (roll undefined) |
 | 16 | not identified | rejection | any command but `:25` / `:32` before `:32#` since the last reset or port open |
 | 17 | position unverified | rejection | AstroUniBoard only (keep reserved in OpenWheel). A move refused because the position can't be trusted: rotator flag 9 with the guard on (#75), or safe mode (#77). Sync (`:56` / `:76`) or `:77` home first |

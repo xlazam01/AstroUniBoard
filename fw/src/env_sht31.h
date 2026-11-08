@@ -1,4 +1,5 @@
-// SHT31 temperature / humidity: on-board sensor (0x45) and optional external sensor on J9 (0x44).
+// Temperature / humidity: on-board SHT31 (0x45) and optional external sensor on J9 (0x44), SHT3x or SHT4x
+// (rev 2.1 snap-off tab: SHT40), auto-detected by an SHT4x serial number read with SHT3x as the fallback.
 // Non-blocking: envUpdate() runs from the superloop, both sensors are measured every ENV_PERIOD_MS.
 // The firmware only reports; temperature compensation is host-side (V2_PLAN Q21).
 #pragma once
