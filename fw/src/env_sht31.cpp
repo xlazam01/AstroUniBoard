@@ -1,5 +1,5 @@
-// SHT3x / SHT4x driver. Both sensors are auto-detected: on-board U8 (0x45) is an SHT31 on rev 2.0 and an
-// SHT40-BD1B on rev 2.1; the external J9 sensor (0x44) is an SHT31 module or the rev 2.1 snap-off tab
+// SHT3x / SHT4x driver. Both sensors are auto-detected: on-board U8 (0x45) is an SHT31 on rev 2.0 / 2.1 and an
+// SHT40-BD1B on rev 2.2; the external J9 sensor (0x44) is an SHT31 module or the rev 2.2 snap-off tab
 // (SHT40-AD1B). Both U8 variants are powered from PB9 (SHT_PWR), so the power-cycle recovery covers either.
 // SHT3x-DIS datasheet: single shot 0x2400, high repeatability, no clock stretching.
 // SHT4x datasheet: one-byte commands, 0xFD measure high precision (8.3 ms max), 0x89 serial number.

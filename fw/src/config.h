@@ -26,8 +26,8 @@
 #define PIN_I2C_SCL          PA9
 #define PIN_I2C_SDA          PA10
 
-// On-board sensor supply. Rev 2.0 (SHT31): also drives its ADDR pin, so it answers at 0x45 only while
-// powered. Rev 2.1 (SHT40-BD1B, fixed 0x45): plain supply.
+// On-board sensor supply. Rev 2.0 / 2.1 (SHT31): also drives its ADDR pin, so it answers at 0x45 only while
+// powered. Rev 2.2 (SHT40-BD1B, fixed 0x45, env:rev21 build): plain supply.
 #define PIN_SHT_PWR          PB9
 #define SHT31_ADDR_ONBOARD   0x45
 #define SHT31_ADDR_EXTERNAL  0x44   // optional sensor on J9
