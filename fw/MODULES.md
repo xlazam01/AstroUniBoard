@@ -2,7 +2,8 @@
 
 Protocol: [`docs/PROTOCOL.md`](../docs/PROTOCOL.md) (1.0). Decisions: [`docs/V2_PLAN.md`](../docs/V2_PLAN.md) §9.
 Build: `"$USERPROFILE/.platformio/penv/Scripts/pio.exe" run` in `fw/` (`pio` is not on PATH).
-Host unit tests: `pio test -e native` (pure code only, needs a host gcc).
+Host unit tests: `pio test -e native` (needs a host gcc): pure code, plus `test_env_sht`, which includes
+`env_sht31.cpp` with its own `Arduino.h` / `Wire.h` stand-ins and fake SHT3x / SHT4x parts.
 
 The headers are the contracts between modules. Code that needs another module uses only its header.
 
