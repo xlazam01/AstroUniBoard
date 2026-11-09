@@ -7,7 +7,19 @@
 | 1.x | Prototype boards (OnStepX firmware) | `f313306` |
 | **2.0** | **Frozen 2026-11-06 for bring-up testing.** Change only through a new revision. | tag `hw-rev2.0` |
 | 2.1 | Schematic and PCB done, DRC clean apart from the overlapping M2/M3 mounting holes (as in 2.0). The 2026-11-06 review fixes (#70, #71, #69 note) are folded in. Production files in release `v2.0.0`; not ordered. | — |
-| **2.2** | Schematic and PCB done 2026-11-08: SHT40 on the board, snap-off SHT40 sensor tab. DRC as 2.1. Not ordered yet. Needs firmware with SHT4x support (#90, PR #91). | — |
+| 2.2 | Schematic and PCB done 2026-11-08: SHT40 on the board, snap-off SHT40 sensor tab. Superseded by 2.3, never ordered. | — |
+| **2.3** | Schematic and PCB done 2026-11-09 (working copy in `hw/`): backup SHT40 slot on the sensor tab, 0603 status LEDs, 4.7 nF USB shield caps. DRC as 2.1. Not ordered yet. Needs firmware with SHT4x support (#90, PR #91). | — |
+
+Rev 2.3 changes (2026-11-09). MCU pins unchanged, so rev 2.3 also runs the `env:rev21` build:
+- **U16 SHT40-CD1B-R2** (C7461852, 0x46) on the **bottom** of the snap-off sensor tab, under U15, **DNP by default**:
+  fitting it makes the assembly double-sided. It shares C71 with U15. With U15 (0x44) and U8 (0x45) all three
+  sensors can share the I²C bus through J9. The SHT4x driver in PR #91 probes 0x44 and 0x45 only, so a fitted U16
+  needs a firmware change before it reports values.
+- **D1/D2 status LEDs 0402 → 0603** (C2286, Basic), placed symmetric about the board centre. D3/D4 (power LEDs)
+  stay 0402 (C130719, Extended). One GND stitching via under D2 removed.
+- **C34/C35 USB shield caps 100 nF/16 V → 4.7 nF/50 V** (C1538, Basic), as on OpenWheel.
+- Schematic tidied (input and sensor-tab blocks, framed sensor tab, wrapped notes), title block and silkscreen
+  `Rev 2.3`. ERC unchanged (14 pre-existing), connectivity identical to 2.2 apart from D1/D2/U16.
 
 Rev 2.2 changes (2026-11-08). The MCU pins are the same as rev 2.1, so rev 2.2 runs the `env:rev21` firmware build;
 only the sensors changed, and the firmware detects them at runtime:
@@ -39,7 +51,7 @@ only the sensors changed, and the firmware detects them at runtime:
     off, wire them to J9: SDA → 1, SCL → 2, 3V3 → 3, GND → 4. SDA and SCL reach the sensor through two vias at the tip.
   - Snap the tab off before fitting J3: its body overhangs the left edge by about 1.2 mm and covers the tab's root.
   - Same firmware note as U8: the SHT4x driver is needed before the tab sensor reports values.
-  - KiCad has no 3D model for the SHT4x DFN-4, so renders show U8 and the tab without the sensor body.
+  - KiCad ships no 3D model for the SHT4x DFN-4; the project has its own in `hw/3dmodels/` (since PR #93).
 - **Copper to board edge stays at 0.1 mm (owner's choice, 2026-11-08).** A JLC-limit review found copper under JLC's
   0.2 mm in these places: the pour (0.1 mm), B.Cu tracks along the right edge (0.10 mm), the `SWCLK_BOOT0` track at
   the top edge (0.10 mm), tracks along the bottom edge (0.14 mm), vias at the top edge (0.15 mm), the J3/J4/J9 pads
@@ -77,13 +89,13 @@ Rev 2.1 changes:
   XT30's plated peg holes and power pins. Bottom silkscreen `J5 FIRST` next to the XT30; assembly order in the README.
 - No SWD pads (#72, owner's choice): recovery is DFU only (`nBOOT_SEL`, see the README firmware section).
 
-### Rev 2.2 BOM (JLCPCB assembly)
+### Rev 2.3 BOM (JLCPCB assembly)
 
 Every fitted part has an `LCSC` field, in the schematic and on the PCB footprints, so the JLC fabrication
 toolkit fills the BOM without manual matching. Mounting holes H1–H8 are excluded from the BOM and position file.
 Parts were picked JLC Basic first, then Preferred, then Extended; values and numbers follow OpenWheel and the
-UpBox parts list where they overlap. Snapshot 2026-11-06: 17 Basic, 3 Preferred, 24 Extended unique parts.
-All SMD parts are on the top side.
+UpBox parts list where they overlap. `bomcheck.py` 2026-11-09: 19 Basic, 3 Preferred, 23 Extended unique parts
+(F1 counted as Extended). All fitted SMD parts are on the top side; U16 (DNP) is the only bottom-side SMD part.
 
 Value style is `<value>` or `<value>/<voltage>`, for example `100nF`, `100nF/50V`, `10uF/10V`. The voltage is
 in the value wherever the part differs by rating:
@@ -101,8 +113,8 @@ Choices to confirm before ordering:
   (different pinout).
 - **L4 = 10 µH, IHLP2020BZER100M11 (C844984).** The footprint is IHLP-2020; no inductance was recorded before.
   10 µH gives about 50 % ripple at 1 A, 550 kHz, 12 V → 5.3 V.
-- **D1–D4 = red 0402 LED, NCD0402R1 (C130719, Extended).** There is no Basic red LED in 0402. A 0603 footprint
-  would allow C2286 (Basic) and save one Extended fee.
+- **D1/D2 = red 0603 LED (C2286, Basic) since rev 2.3; D3/D4 = red 0402 LED, NCD0402R1 (C130719, Extended).**
+  There is no Basic red LED in 0402. Moving D3/D4 to 0603 too would save the last LED Extended fee.
 - **R23 1k78 (C113478) is Extended.** Changing the divider to a Basic E24 value would move VOUT.
 - **D23 = SS34 (C8678, Basic)**, 40 V 3 A Schottky in SMA.
 - **D24 = SMF15A (C123802, Extended, ~92k in stock on 2026-11-06)**, 200 W unidirectional TVS in SOD-123FL.
@@ -111,10 +123,10 @@ Choices to confirm before ordering:
 Rev 2.0 is pin-compatible with rev 1 for firmware: every MCU pin has the same function.
 Differences the firmware can see:
 
-| Item | Rev 1 | Rev 2.0 | Rev 2.1 | Rev 2.2 |
+| Item | Rev 1 | Rev 2.0 | Rev 2.1 | Rev 2.2 / 2.3 |
 |------|-------|---------|---------|---------|
 | On-board sensor (U8) | SHT31 at 0x44 (ADDR = GND) | SHT31 at **0x45** (ADDR = PB9 supply) | as rev 2.0 | **SHT40-BD1B** at 0x45 (needs the SHT4x driver) |
-| External sensor on J9 (I2C) | not possible (address clash) | SHT31 at **0x44** | as rev 2.0 | SHT40-AD1B at 0x44 (snap-off tab) |
+| External sensor on J9 (I2C) | not possible (address clash) | SHT31 at **0x44** | as rev 2.0 | SHT40-AD1B at 0x44 (snap-off tab); rev 2.3: optional SHT40-CD1B at 0x46 (U16, DNP) |
 | MPU-6000 /CS | floating | tied to +3.3V (I2C mode) | same as rev 2.0 | same as rev 2.0 |
 | +12V sense on PB10 | — | — | V12 = V_PB10 × 11 | as rev 2.1 |
 
@@ -130,8 +142,8 @@ EEPROM WP to GND, SHT31 supply decoupled (C69), dimmer LEDs, hub crystal load ca
   `L_5.5x5.1mm`), J6 (XT30PW-M with its 3D model), the logo, and for the sensor tab the wire pads (J11,
   `SensorTab_WirePads_2Top_2Bottom`, pads on both sides) and the mouse-bite row (MB1,
   `MouseBites_4x0.6mm_P1.0mm`, board-only).
-- `hw/3dmodels/`: 3D models not shipped with KiCad (XT30PW-M, SHT3x DFN-8), referenced as `${KIPRJMOD}/3dmodels/…`.
-  Rev 2.2 no longer uses the SHT3x model (U8 is an SHT40). There is no SHT4x DFN-4 model yet.
+- `hw/3dmodels/`: 3D models not shipped with KiCad (XT30PW-M, SHT4x DFN-4, SHT3x DFN-8), referenced as
+  `${KIPRJMOD}/3dmodels/…`. Since rev 2.2 the SHT3x model is unused (U8 is an SHT40).
 - `*.kicad_prl` (per-user UI state) is not tracked.
 
 ### Production files
@@ -145,7 +157,7 @@ To generate them, use the JLC fabrication toolkit (bennymeg's JLC-Plugin-for-KiC
 Check before ordering:
 - every BOM line has an LCSC number (the `LCSC` field on each fitted part);
 - H1–H8 are absent from BOM and CPL (they have *exclude from BOM / position files* set);
-- DNP parts (J3, J4, J8, J9, J10) are absent;
+- DNP parts (J3, J4, J8, J9, J10, U16) are absent;
 - the zip holds F/B copper, mask, paste, silkscreen, Edge.Cuts and PTH/NPTH drill (2-layer board).
 
 The toolkit release for KiCad 9 fails under KiCad 10 (`FOOTPRINT.Duplicate()` signature). Until it is updated,
@@ -196,8 +208,9 @@ Baud rate: 460800. TMC2209 addresses hardwired via MS1/MS2: AXIS3 = addr 1, AXIS
 | Device | Address | Purpose |
 |--------|---------|---------|
 | 24AA64 | 0x50 | 8 KB NV storage (focuser/rotator position, settings). 24AA64T SOT-23 package has no address pins, so the address is fixed |
-| On-board sensor (U8) | 0x45 | Temperature + humidity. Rev 2.2: SHT40-BD1B (address fixed by the part). Rev 2.0 and 2.1: SHT31, ADDR tied to the PB9 supply. Rev 1: SHT31 at 0x44 |
-| External sensor (J9) | 0x44 | Optional. Rev 2.2: SHT40-AD1B on the snap-off tab, wired to J9. Rev 2.0 and 2.1: an SHT31 (or any SHT3x/SHT4x at 0x44) |
+| On-board sensor (U8) | 0x45 | Temperature + humidity. Rev 2.2 and later: SHT40-BD1B (address fixed by the part). Rev 2.0 and 2.1: SHT31, ADDR tied to the PB9 supply. Rev 1: SHT31 at 0x44 |
+| External sensor (J9) | 0x44 | Optional. Rev 2.2 and later: SHT40-AD1B on the snap-off tab, wired to J9. Rev 2.0 and 2.1: an SHT31 (or any SHT3x/SHT4x at 0x44) |
+| Backup tab sensor (U16) | 0x46 | Rev 2.3, DNP: SHT40-CD1B on the bottom of the snap-off tab, on the same J9 wires. Not probed by the firmware yet |
 | MPU-6000 | 0x68 | IMU (rotator gravity homing) |
 
 | Function | Pin | Notes |
