@@ -6,8 +6,8 @@ It is built to sit on the moving part of the train and rotate with the camera, s
 cable leave the rotating side.
 
 <p align="center">
-  <img src="docs/img/board/top-3d.png" width="48%" alt="AstroUniBoard rev 2.1, top side">
-  <img src="docs/img/board/bottom-3d.png" width="48%" alt="AstroUniBoard rev 2.1, bottom side">
+  <img src="docs/img/board/top-3d.png" width="48%" alt="AstroUniBoard rev 2.3, top side">
+  <img src="docs/img/board/bottom-3d.png" width="48%" alt="AstroUniBoard rev 2.3, bottom side">
 </p>
 
 | | |
@@ -21,8 +21,7 @@ cable leave the rotating side.
 | Power | 12 V on an XT30 (motors + 5.3 V buck). Logic also runs from USB alone, without motors |
 | Licences | firmware and software GPL-3.0, hardware CERN-OHL-S-2.0 |
 
-Renders are from KiCad and show the board as JLC delivers it (DNP sockets left out); they still show rev 2.1,
-without the snap-off sensor tab.
+Renders are from KiCad and show the board as JLC delivers it (DNP sockets left out).
 Schematic: [docs/astrouniboard-rev2.3-schematic.pdf](docs/astrouniboard-rev2.3-schematic.pdf).
 
 ---
