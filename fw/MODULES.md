@@ -2,7 +2,8 @@
 
 Protocol: [`docs/PROTOCOL.md`](../docs/PROTOCOL.md) (1.0). Decisions: [`docs/V2_PLAN.md`](../docs/V2_PLAN.md) §9.
 Build: `"$USERPROFILE/.platformio/penv/Scripts/pio.exe" run` in `fw/` (`pio` is not on PATH).
-Host unit tests: `pio test -e native` (pure code only, needs a host gcc).
+Host unit tests: `pio test -e native` (needs a host gcc): pure code, plus `test_env_sht`, which includes
+`env_sht31.cpp` with its own `Arduino.h` / `Wire.h` stand-ins and fake SHT3x / SHT4x parts.
 
 The headers are the contracts between modules. Code that needs another module uses only its header.
 
@@ -23,7 +24,7 @@ The headers are the contracts between modules. Code that needs another module us
 | Rotator | `rotator.*`, `rotator_wrap.*` | #29 #30 #32 #74 #75 | angle, cable wrap, IMU home / calibration sequence, suspect angle |
 | Move guard | `move_guard.*` | #75 #77 | pure: suspect angle / safe-mode move rules (native test) |
 | IMU | `imu_mpu6000.*` | #31 #32 | MPU-6000 on I2C 0x68, roll / tilt, calibration math |
-| SHT31 | `env_sht31.*` | #34 | on-board 0x45, J9 0x44, selection |
+| SHT3x / SHT4x | `env_sht31.*` | #34 #90 | on-board 0x45, J9 0x44, each SHT3x or SHT4x (auto-detected), selection |
 | NV store | `nv_store.*` | #17 | 24AA64: settings, position, IMU calibration records |
 | Housekeeping | `housekeeping.*` | #18 #74 | die temp, VDDA, driver temp classes, +12 V sense (rev 2.1 build) |
 | LEDs | `leds.*` | #20 | TIM16 soft PWM |

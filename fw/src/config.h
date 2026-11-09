@@ -22,11 +22,12 @@
 
 #define PROTOCOL_SERIAL      SerialUSB
 
-// I2C bus: 24AA64 EEPROM, SHT31 (on-board + external J9), MPU-6000 (0x68)
+// I2C bus: 24AA64 EEPROM, SHT3x / SHT4x (on-board + external J9), MPU-6000 (0x68)
 #define PIN_I2C_SCL          PA9
 #define PIN_I2C_SDA          PA10
 
-// SHT31 supply. Also drives the ADDR pin of the on-board sensor, so it answers at 0x45 only while powered.
+// On-board sensor supply. Rev 2.0 / 2.1 (SHT31): also drives its ADDR pin, so it answers at 0x45 only while
+// powered. Rev 2.2 (SHT40-BD1B, fixed 0x45, env:rev21 build): plain supply.
 #define PIN_SHT_PWR          PB9
 #define SHT31_ADDR_ONBOARD   0x45
 #define SHT31_ADDR_EXTERNAL  0x44   // optional sensor on J9
