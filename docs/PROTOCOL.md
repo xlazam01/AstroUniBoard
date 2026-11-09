@@ -128,7 +128,7 @@ back as `0483:DF11` (STM32 BOOTLOADER); after the download it starts the firmwar
 
 ```
 ASTROUNIBOARD,<model>,<firmware>,<protocol>,<serial>,<caps>#
-ASTROUNIBOARD,REV2,FW2.0.0,2,3A00FF12ABCD,F#
+ASTROUNIBOARD,REV2,FW2.1.0,2,3A00FF12ABCD,F#
 ```
 
 | Field | Values |

@@ -8,12 +8,12 @@
 | **2.0** | **Frozen 2026-11-06 for bring-up testing.** Change only through a new revision. | tag `hw-rev2.0` |
 | 2.1 | Schematic and PCB done, DRC clean apart from the overlapping M2/M3 mounting holes (as in 2.0). The 2026-11-06 review fixes (#70, #71, #69 note) are folded in. Production files in release `v2.0.0`; not ordered. | — |
 | 2.2 | Schematic and PCB done 2026-11-08: SHT40 on the board, snap-off SHT40 sensor tab. Superseded by 2.3, never ordered. | — |
-| **2.3** | Schematic and PCB done 2026-11-09 (working copy in `hw/`): backup SHT40 slot on the sensor tab, 0603 status LEDs, 4.7 nF USB shield caps. DRC as 2.1. Not ordered yet. Needs firmware with SHT4x support (#90, PR #91). | — |
+| **2.3** | Schematic and PCB done 2026-11-09 (working copy in `hw/`): backup SHT40 slot on the sensor tab, 0603 status LEDs, 4.7 nF USB shield caps. DRC as 2.1. Production files in release `v2.1.0` (with firmware 2.1.0, SHT4x support); not ordered. | tag `v2.1.0` |
 
 Rev 2.3 changes (2026-11-09). MCU pins unchanged, so rev 2.3 also runs the `env:rev21` build:
 - **U16 SHT40-CD1B-R2** (C7461852, 0x46) on the **bottom** of the snap-off sensor tab, under U15, **DNP by default**:
   fitting it makes the assembly double-sided. It shares C71 with U15. With U15 (0x44) and U8 (0x45) all three
-  sensors can share the I²C bus through J9. The SHT4x driver in PR #91 probes 0x44 and 0x45 only, so a fitted U16
+  sensors can share the I²C bus through J9. The SHT4x driver (firmware 2.1.0) probes 0x44 and 0x45 only, so a fitted U16
   needs a firmware change before it reports values.
 - **D1/D2 status LEDs 0402 → 0603** (C2286, Basic), placed symmetric about the board centre. D3/D4 (power LEDs)
   stay 0402 (C130719, Extended). One GND stitching via under D2 removed.
@@ -32,7 +32,7 @@ only the sensors changed, and the firmware detects them at runtime:
   horizontally in the 0.8 mm gap between U8 and Y1: VDD pad straight under U8's VDD pin, GND pad to Y1 pad 4. Bodies
   are 0.4 mm (U8) and 0.75 mm (Y1) apart, but the courtyards and silk outlines touch. The `SHT_VDD` feed from R32 comes
   up through a 0.5/0.3 mm via right of U8, and all `SHT_VDD` tracks are 0.127 mm.
-  **Firmware impact:** firmware 2.0.0 speaks SHT3x only. A rev 2.2 board needs the SHT4x driver (auto-detect of SHT3x
+  **Firmware impact:** firmware 2.0.0 speaks SHT3x only. A rev 2.2 board needs the SHT4x driver of firmware 2.1.0 (auto-detect of SHT3x
   and SHT4x on 0x44 and 0x45, so rev 2.0 boards keep working).
 - **Snap-off sensor tab (external SHT40 for J9).** A 4 × 10 mm tab sticks out of the left board edge
   (x 55.05–65.05, y 118.8–122.8, between J3 pin 1 and C34). It carries **U15 SHT40-AD1B-R2** (C2909890, Extended,
