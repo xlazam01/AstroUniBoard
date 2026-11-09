@@ -12,7 +12,7 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board. **HW rev 2.3** (SHT40 on the board, snap-off SHT40 sensor tab with a backup sensor slot, 0603 status LEDs) is designed, not ordered; it needs firmware with SHT4x support (PR #91) |
+| Status | Release [v2.1.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.1.0) ([package notes](release/2.1.0/README.md)): HW rev 2.3 (SHT40 on the board, snap-off SHT40 sensor tab with a backup sensor slot, 0603 status LEDs), firmware V2 `2.1.0` (SHT3x / SHT4x auto-detect), protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Rev 2.3 is not ordered yet and firmware 2.1.0 is not yet tested on hardware. Previous: [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0) (HW rev 2.1) |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
 | Sensors | SHT40 temperature/humidity on board (+ a second SHT40 on a snap-off tab for outside the board), MPU-6000 accelerometer for camera roll |
@@ -21,8 +21,9 @@ cable leave the rotating side.
 | Power | 12 V on an XT30 (motors + 5.3 V buck). Logic also runs from USB alone, without motors |
 | Licences | firmware and software GPL-3.0, hardware CERN-OHL-S-2.0 |
 
-Renders are from KiCad and show the board as JLC delivers it (DNP sockets left out).
-Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-schematic.pdf).
+Renders are from KiCad and show the board as JLC delivers it (DNP sockets left out); they still show rev 2.1,
+without the snap-off sensor tab.
+Schematic: [docs/astrouniboard-rev2.3-schematic.pdf](docs/astrouniboard-rev2.3-schematic.pdf).
 
 ---
 
@@ -49,7 +50,7 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **One UART for both drivers** | USART2, addresses 0 / 1 | Run current, hold current, microsteps and mode can be set at runtime and saved, with no pots to adjust. Driver faults, overtemperature and StallGuard are visible to the host |
 | **Camera roll sensor** | MPU-6000 U10 (I²C, 0x68) | The board rotates with the camera, so the accelerometer measures camera roll against gravity. That gives **IMU homing**: the rotator finds its zero without a switch, flag or Hall sensor. Calibrate once (three captures, any mounting orientation, also upside down) |
 | **Temperature / humidity** | SHT40-BD1B U8 (0x45; SHT31 on rev 2.0/2.1) | For temperature compensation of focus (done on the host) and for dew point (ASCOM ObservingConditions). It is on the board because the board sits on the optical train |
-| **Switched sensor supply** | PB9 → R32 → SHT40 VDD | **Less self-heating:** the sensor sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (Firmware 2.0.0 still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) The on-board SHT40-BD1B answers at 0x45, so the **external SHT40-AD1B** (0x44) fits on the same bus. (Rev 2.0 got the same split from an SHT31 with ADDR tied to PB9.) |
+| **Switched sensor supply** | PB9 → R32 → SHT40 VDD | **Less self-heating:** the sensor sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (The firmware still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) The on-board SHT40-BD1B answers at 0x45, so the **external SHT40-AD1B** (0x44) fits on the same bus. (Rev 2.0 got the same split from an SHT31 with ADDR tied to PB9.) |
 | **Snap-off sensor tab** (rev 2.2) | U15 SHT40-AD1B (0x44) at the tip of a 4 × 10 mm tab on the left edge, one mouse-bite row. Rev 2.3: footprint for a backup U16 SHT40-CD1B (0x46) on the tab's bottom, DNP | The board's own sensor reads the board, not the air. Snap the tab off with pliers, wire its pads to J9 (3V3/GND on top, SDA/SCL on the bottom) and put it where the air temperature matters, for example on the dew shield. No copper pour on the tab, so it carries little heat. It is part of the same PCB and is assembled with it, so there is no second board to order. U16 is left out because fitting it makes the assembly double-sided; the firmware does not read 0x46 yet |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
@@ -194,7 +195,7 @@ Notes before ordering:
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
 - 19 Basic, 3 Preferred and 23 Extended unique parts. The 0402 LEDs D3/D4 and R23 are avoidable Extended parts.
 - All fitted SMD parts are on the top side (single-sided assembly). Fitting U16 makes it double-sided.
-- Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the GitHub release (`v2.0.0` for rev 2.1),
+- Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the GitHub release (`v2.1.0` for rev 2.3, `v2.0.0` for rev 2.1),
   or generate them yourself as described in [docs/HARDWARE.md](docs/HARDWARE.md#production-files).
 
 ## Assembly
@@ -269,7 +270,7 @@ not reachable: flash and test the firmware before you close the enclosure.
 1. **USB only first** (no 12 V): D4 (5 V) and D1 (status) light up, and Windows shows a COM port
    `AstroUniBoard Focuser Rotator` (VID 1209, PID 0001). A board without firmware enumerates as `STM32 BOOTLOADER`
    (0483:DF11) instead: flash it, see [Firmware](#firmware).
-2. Identify it: send `:32#` → `ASTROUNIBOARD,REV2,FW2.0.0,2,<serial>,F#`. Every command other than `:25#` / `:32#`
+2. Identify it: send `:32#` → `ASTROUNIBOARD,REV2,FW2.1.0,2,<serial>,F#`. Every command other than `:25#` / `:32#`
    answers `ERR,16` until the host has sent `:32#`.
 3. **Then 12 V** on the XT30 (current-limited bench supply, 0.5 A): D3 lights up.
 4. Set the motor current **before the first move**: `:48,F,<run mA>,<hold mA>,<usteps>,<mode>,<idle_off s>#`, the

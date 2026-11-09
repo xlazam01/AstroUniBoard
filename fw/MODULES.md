@@ -37,5 +37,5 @@ Wire → nvBegin → imuBegin → envBegin) → step timer → tmcBegin → focu
 Safe mode (after a watchdog reset) skips every I2C device: defaults in use, EEPROM fault flag set.
 Moves in safe mode: absolute refused, small relative jogs only, until a sync (PROTOCOL.md §4, #77).
 
-Builds: `env:rev2` (rev 2.0, `HW_REV` 20) and `env:rev21` (rev 2.1, `-D HW_REV=21`: +12 V sense on PB10).
+Builds: `env:rev2` (rev 2.0, `HW_REV` 20) and `env:rev21` (rev 2.1 and later — 2.2, 2.3 have the same MCU pins — `-D HW_REV=21`: +12 V sense on PB10).
 Image marker `ASTROUNIBOARD-IMG:REV2;` in `main.cpp` (PROTOCOL.md §9, #79).
