@@ -12,7 +12,7 @@ cable leave the rotating side.
 
 | | |
 |---|---|
-| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board. **HW rev 2.2** (SHT40 on the board + snap-off SHT40 sensor tab) is designed, not ordered; it needs firmware with SHT4x support (PR #91) |
+| Status | Release [v2.0.0](https://github.com/xlazam01/AstroUniBoard/releases/tag/v2.0.0): HW rev 2.1, firmware V2 `2.0.0`, protocol 2. Current ASCOM driver [0.2.1](https://github.com/xlazam01/AstroUniBoard/releases/tag/driver-v0.2.1) (pre-release). Firmware 2.0.0 is not yet tested on a rev 2.1 board. **HW rev 2.3** (SHT40 on the board, snap-off SHT40 sensor tab with a backup sensor slot, 0603 status LEDs) is designed, not ordered; it needs firmware with SHT4x support (PR #91) |
 | MCU | STM32G0B1CBT6, Cortex-M0+ 64 MHz, 128 KB flash, 144 KB RAM |
 | Motors | 2 × TMC2209 (UART, StealthChop / SpreadCycle, StallGuard), up to 1.5 A RMS each (firmware limit) |
 | Sensors | SHT40 temperature/humidity on board (+ a second SHT40 on a snap-off tab for outside the board), MPU-6000 accelerometer for camera roll |
@@ -50,13 +50,13 @@ Schematic: [docs/astrouniboard-rev2.1-schematic.pdf](docs/astrouniboard-rev2.1-s
 | **Camera roll sensor** | MPU-6000 U10 (I²C, 0x68) | The board rotates with the camera, so the accelerometer measures camera roll against gravity. That gives **IMU homing**: the rotator finds its zero without a switch, flag or Hall sensor. Calibrate once (three captures, any mounting orientation, also upside down) |
 | **Temperature / humidity** | SHT40-BD1B U8 (0x45; SHT31 on rev 2.0/2.1) | For temperature compensation of focus (done on the host) and for dew point (ASCOM ObservingConditions). It is on the board because the board sits on the optical train |
 | **Switched sensor supply** | PB9 → R32 → SHT40 VDD | **Less self-heating:** the sensor sits on a board that warms up from the drivers and the buck, and a sensor that is powered all the time adds its own heat. Powering it only around a measurement keeps the reading closer to the air temperature, which matters for focus temperature compensation. (Firmware 2.0.0 still keeps it powered and uses the switch to power-cycle a stuck sensor; duty-cycling it is a firmware option for later.) The on-board SHT40-BD1B answers at 0x45, so the **external SHT40-AD1B** (0x44) fits on the same bus. (Rev 2.0 got the same split from an SHT31 with ADDR tied to PB9.) |
-| **Snap-off sensor tab** (rev 2.2) | U15 SHT40-AD1B at the tip of a 4 × 10 mm tab on the left edge, one mouse-bite row | The board's own sensor reads the board, not the air. Snap the tab off with pliers, wire its pads to J9 (3V3/GND on top, SDA/SCL on the bottom) and put it where the air temperature matters, for example on the dew shield. No copper pour on the tab, so it carries little heat. It is part of the same PCB and is assembled with it, so there is no second board to order |
+| **Snap-off sensor tab** (rev 2.2) | U15 SHT40-AD1B (0x44) at the tip of a 4 × 10 mm tab on the left edge, one mouse-bite row. Rev 2.3: footprint for a backup U16 SHT40-CD1B (0x46) on the tab's bottom, DNP | The board's own sensor reads the board, not the air. Snap the tab off with pliers, wire its pads to J9 (3V3/GND on top, SDA/SCL on the bottom) and put it where the air temperature matters, for example on the dew shield. No copper pour on the tab, so it carries little heat. It is part of the same PCB and is assembled with it, so there is no second board to order. U16 is left out because fitting it makes the assembly double-sided; the firmware does not read 0x46 yet |
 | **Position memory** | 24AA64 EEPROM U4 | Focuser and rotator positions survive a power cycle. A 256-slot ring with CRC spreads the wear (two writes per move). A move cut by power loss is detected and flagged "unverified" |
 | **USB hub** | CH334P U6, USBLC6 ESD on both ports, CH213K current-limited switch on the downstream VBUS | One cable from the PC carries the board and the camera. The downstream port is protected against shorts and ESD. The hub is **USB 2.0 (480 Mbit/s)**: fine for a guide camera, but a USB 3 imaging camera loses speed on it and should get its own cable |
 | **Power path** | XT30 J6 → F1 2 A polyfuse → D24 SMF15A TVS (rev 2.1) → ME3116 buck (5.3 V) → CH213K ideal-diode OR with USB VBUS → ME6231 3.3 V LDO | 12 V for the motors and a 5 V rail for the hub. D24 clamps the plug-in ringing of a long cable on the all-ceramic input capacitance to below the TMC2209's 29 V limit. F1 trips on a short or overload behind it and resets when cooled. There is no reverse-polarity FET: a reversed supply drives D24 forward until F1 trips, which may cost D24. Rely on the keyed XT30 and check home-made pigtails. The board also comes up from USB alone (bench work, firmware updates) while the motors stay unpowered. 5.3 V leaves headroom for the drop across the ideal diode and the downstream current switch |
 | **12 V sense** (rev 2.1) | R33/R34 divider on PB10 | The firmware can see that motor power is missing or low before a move, instead of finding out from a driver that stops answering |
 | **Motor supply jumper** | JP4, one 3-pad solder jumper `12V – Vdrive – 5V`, 12 V side bridged | 5 V motors can be used from USB power for light loads. One middle pad means only one source can be selected (rev 2.0 had two separate jumpers that could short 12 V onto 5 V), see [Assembly](#4-solder-jumper-jp4) |
-| **Status LEDs** | D1 status (PB12), D2 activity (PB4), D3 = 12 V present, D4 = 5 V present | You can see power, motion and errors without a PC. The brightness is adjustable and the LEDs are dim, because the board sits next to a camera |
+| **Status LEDs** | D1 status (PB12), D2 activity (PB4) in 0603 (rev 2.3), D3 = 12 V present, D4 = 5 V present in 0402 | You can see power, motion and errors without a PC. The brightness is adjustable and the LEDs are dim, because the board sits next to a camera |
 | **Buttons** | RST, LEFT (= BOOT0), RIGHT | RST and BOOT0 are for recovery. LEFT/RIGHT are not used by the firmware: in the Triton enclosure the board is mounted upside down and out of reach |
 | **Spare I/O** | J4 Hall/index, J8 AUX1/AUX2, J9 I²C, J10 UART6 — all DNP | For other uses of the board (filter wheel index, dew heater MOSFET, GPS, SQM). See [docs/USE_CASES.md](docs/USE_CASES.md) |
 | **Mounting** | 4 × M2 (29 × 29 mm) and 4 × M3 (26 × 26 mm), overlapping keyholes | Fits both standoff patterns used in the rig enclosures. The 26 × 26 mm M3 pattern is the **NEMA 14 hole pattern**, so the board also screws straight onto the back of a NEMA 14 stepper: ideal for a focuser motor or a small mount axis, with no bracket and the shortest possible motor cable |
@@ -100,7 +100,7 @@ These options were weighed during the design, with the reason for each decision.
 | Power connector | XT30 (keyed, 15 A class) | 5.5/2.1 barrel jack (rev 1) | Barrel jacks fall out and short when they are plugged in. The XT30 is keyed against reverse polarity and locks firmly |
 | Motor connectors | J5 horizontal JST-PH for the rotator, focuser wires soldered (J3 DNP) | Vertical JST-PH on both | Edge entry: the cable leaves in the board plane, next to the USB cables. The trade-off is the [stacking with the XT30](#1-j5-before-j6-the-xt30--read-this-first) |
 | MCU | STM32G0B1CBT6 (128 KB) | G0B1CCT6 (256 KB), G0B1CET6 (512 KB), same pinout | V2 fits in 128 KB. The larger parts are drop-in replacements if stock or features need them (avoid the `…N` variants, they have a different pinout) |
-| LEDs | 0402 red (Extended part at JLC) | 0603 (Basic part, one less Extended fee) | Space next to the USB ports. Could change in a later revision |
+| LEDs | D1/D2 0603 red (Basic, rev 2.3), D3/D4 0402 red (Extended) | All four in 0402, or all four in 0603 | Rev 2.3 moved the two status LEDs to the Basic 0603 part. D3/D4 stay 0402 for space; moving them too would save the last LED Extended fee |
 | Buttons as hand controller | Not used | Manual focus in/out on LEFT/RIGHT | Not reachable in the Triton enclosure |
 | Rev 3 ideas | — | 2–3 PWM dew-heater outputs, switched 12 V, INA219 power monitor, SWD pads | Would make it a focuser + rotator + hub + power box. See [docs/USE_CASES.md](docs/USE_CASES.md) |
 
@@ -119,7 +119,7 @@ These options were weighed during the design, with the reason for each decision.
 | J3 | pads, DNP | Focuser motor (solder wires or a vertical JST-PH 4) | 1 B2 (G), 2 B1 (BK), 3 A1 (R), 4 A2 (BL): colours on the bottom silkscreen |
 | J4 | pads, DNP | Hall / index input | 1 3V3, 2 GND, 3 HALL |
 | J8 | pads, DNP | AUX GPIO | 1 3V3, 2 AUX1 (X1), 3 AUX2 (X2), 4 GND |
-| J9 | pads, DNP | External I²C (the snap-off SHT40 tab at 0x44, or any I²C sensor) | 1 SDA, 2 SCL, 3 3V3, 4 GND |
+| J9 | pads, DNP | External I²C (the snap-off SHT40 tab at 0x44, plus 0x46 if U16 is fitted, or any I²C sensor) | 1 SDA, 2 SCL, 3 3V3, 4 GND |
 | J11 | snap-off tab, left edge | Wire pads of the SHT40 tab (U15) | top: 3V3, GND; bottom: SDA, SCL → J9 1 SDA, 2 SCL, 3 3V3, 4 GND |
 | J10 | pads, DNP | UART6 | 1 3V3, 2 TX6, 3 RX6, 4 GND |
 | JP4 | top, between the XT30 pins | Motor supply (Vdrive), 3 pads `12V – Vdrive – 5V` | **12V side bridged** by default |
@@ -129,8 +129,8 @@ a swapped pair makes the motor buzz instead of turning. It does not damage anyth
 
 ## Bill of materials
 
-Rev 2.2, JLCPCB assembly. Every fitted part carries an `LCSC` field in the schematic, so the JLC fabrication toolkit
-fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see the notes below the table.
+Rev 2.3, JLCPCB assembly. Every fitted part carries an `LCSC` field in the schematic, so the JLC fabrication toolkit
+fills the BOM by itself. Snapshot 2026-11-09 (stock checked 2026-11-06). Check stock before ordering, see the notes below the table.
 
 | Ref | Qty | Value | Package | LCSC |
 |---|---|---|---|---|
@@ -151,7 +151,8 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | D23 | 1 | SS34 Schottky | SMA | C8678 |
 | D24 | 1 | SMF15A TVS (12 V input) | SOD-123FL | C123802 |
 | F1 | 1 | Polyfuse 2 A hold / 3.5 A trip, 16 V (Ruilon SMD1206P200TF/16) | 1206 | C55125664 |
-| D1–D4 | 4 | LED red | 0402 | C130719 |
+| D1, D2 | 2 | LED red | 0603 | C2286 |
+| D3, D4 | 2 | LED red | 0402 | C130719 |
 | J2, J7 | 2 | USB-C receptacle (G-Switch GT-USB-7010ASV) | THT/SMD | C2988369 |
 | J5 | 1 | JST S4B-PH-K, horizontal | THT | C265452 |
 | J6 | 1 | Amass XT30PW-M | THT, **bottom** | C431092 |
@@ -162,8 +163,9 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | C14, C48–C51 | 5 | 10 µF 6.3 V | 0402 | C15525 |
 | C1, C10, C11, C33 | 4 | 1 µF | 0402 | C52923 |
 | C19–C23, C25–C27, C30, C56 | 10 | 100 nF 50 V | 0402 | C307331 |
-| C6, C8, C9, C12, C15, C17, C34, C35, C52, C54, C55, C58, C69, C70, C71 | 15 | 100 nF 16 V | 0402 | C1525 |
+| C6, C8, C9, C12, C15, C17, C52, C54, C55, C58, C69, C70, C71 | 13 | 100 nF 16 V | 0402 | C1525 |
 | C7, C18 | 2 | 22 nF 50 V | 0402 | C1532 |
+| C34, C35 | 2 | 4.7 nF 50 V (USB shield) | 0402 | C1538 |
 | C57 | 1 | 2.2 nF 50 V | 0402 | C1531 |
 | C4, C5 | 2 | 10 pF | 0402 | C32949 |
 | R10, R11, R19, R20 | 4 | 0.11 Ω (sense) | 0805 | C5126077 |
@@ -181,6 +183,7 @@ fills the BOM by itself. Snapshot 2026-11-06. Check stock before ordering, see t
 | **Not fitted (DNP)** | | | | |
 | J3, J8, J9, J10 | 4 | JST B4B-PH-K, vertical (optional) | THT | C131334 |
 | J4 | 1 | JST B3B-PH-K, vertical (optional) | THT | C131339 |
+| U16 | 1 | SHT40-CD1B-R2 (0x46, backup on the tab, **bottom**) | DFN-4 1.5×1.5 | C7461852 |
 
 Hand parts (not from JLC): XT30U-F cable plug with 16–18 AWG silicone wire, a JST PH 4-pin housing with crimped
 contacts for the rotator motor, M2 or M3 standoffs.
@@ -189,8 +192,8 @@ Notes before ordering:
 
 - **U5 STM32G0B1CBT6 had no JLC stock** on 2026-11-06. Use global sourcing or a consigned part, or the
   STM32G0B1**CC**T6 (C5270241, 256 KB, same pinout).
-- 17 Basic, 3 Preferred and 24 Extended unique parts. The 0402 LEDs and R23 are avoidable Extended parts.
-- All SMD parts are on the top side (single-sided assembly).
+- 19 Basic, 3 Preferred and 23 Extended unique parts. The 0402 LEDs D3/D4 and R23 are avoidable Extended parts.
+- All fitted SMD parts are on the top side (single-sided assembly). Fitting U16 makes it double-sided.
 - Production files (gerbers, drill, BOM, CPL) are not in the tree. Take them from the GitHub release (`v2.0.0` for rev 2.1),
   or generate them yourself as described in [docs/HARDWARE.md](docs/HARDWARE.md#production-files).
 
