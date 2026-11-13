@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/banner.png" alt="AstroUniBoard" width="100%"></p>
+
 # AstroUniBoard
 
 A small (35 × 42 mm) STM32G0B1 controller for the **imaging train**. It drives a focuser and a camera rotator, reads
