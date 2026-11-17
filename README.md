@@ -334,6 +334,11 @@ docs/          HARDWARE, PROTOCOL, FIRMWARE, USB_IDS, USE_CASES, V2_PLAN, ADRs, 
 Planning and status: [docs/V2_PLAN.md](docs/V2_PLAN.md), issues on
 [GitHub](https://github.com/xlazam01/AstroUniBoard/issues).
 
+## Support
+
+AstroUniBoard is free and open source. If it saved you a weekend, tips go into the next build:
+[ko-fi.com/curlycz](https://ko-fi.com/curlycz)
+
 ## Licence and credits
 
 - Firmware and software (`fw/`, `fw-onstepx/`, `driver/`): GPL-3.0, see [LICENSE](LICENSE).
