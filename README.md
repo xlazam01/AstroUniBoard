@@ -2,6 +2,8 @@
 
 # AstroUniBoard
 
+<p align="center"><a href="https://ko-fi.com/curlycz"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a></p>
+
 A small (35 × 42 mm) STM32G0B1 controller for the **imaging train**. It drives a focuser and a camera rotator, reads
 temperature, humidity and camera roll, and has a USB hub, so the camera's USB cable runs through the board.
 It is built to sit on the moving part of the train and rotate with the camera, so only one USB cable and one 12 V
